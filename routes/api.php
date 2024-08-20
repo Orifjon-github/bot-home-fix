@@ -1,6 +1,7 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\MainController;
+use App\Http\Controllers\TelegramBotController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,3 +16,13 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/start', [TelegramBotController::class, 'start']);
+
+Route::controller(MainController::class)
+    ->middleware('auth')
+    ->group(function () {
+        Route::prefix('chat')->group(function () {
+            Route::get('open', 'openChats');
+            Route::get('detail/{id}', 'chatDetail');
+            Route::post('admin', 'adminChats');
+        });
+    });
