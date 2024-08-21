@@ -97,12 +97,15 @@ class SendMeTelegram
      * \param $proxy array with the proxy configuration (url, port, type, auth)
      * \return an instance of the class.
      */
-    public function __construct($log_errors = true, array $proxy = [])
+    public function __construct($log_errors = true)
     {
         $this->bot_token = env('TELEGRAM_BOT_TOKEN');
         $this->data = $this->getData();
         $this->log_errors = $log_errors;
-        $this->proxy = $proxy;
+        $this->proxy = [
+            'url' => '10.8.88.22',
+            'port' => '8080'
+        ];
     }
 
     /// Do requests to Telegram Bot API
