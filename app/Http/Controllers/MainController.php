@@ -12,6 +12,11 @@ use Illuminate\Http\Request;
 class MainController extends Controller
 {
     use Response;
+
+    public function ping(Request $request): JsonResponse
+    {
+        return $this->success(['ip' => $request->ip()]);
+    }
     public function openChats(Request $request): JsonResponse
     {
         $openChats = Chat::where('status', 'create')->get();

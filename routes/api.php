@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/start', [TelegramBotController::class, 'start']);
+Route::get('/ping', [MainController::class, 'ping']);
 
 Route::controller(MainController::class)
     ->middleware('auth')
