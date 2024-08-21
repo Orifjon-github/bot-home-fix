@@ -126,6 +126,13 @@ return [
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],
+
+        'elk' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/elk/elk.log'),
+            'level' => 'debug',
+            'days' => 365
+        ],
     ],
 
 ];
