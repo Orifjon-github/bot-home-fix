@@ -4,43 +4,53 @@ namespace App\Services;
 
 
 use App\Helpers\TelegramHelper;
+use App\Repositories\TelegramTextRepository;
+use App\Repositories\UserRepository;
 
-class SendMeTelegramService
+class TelegramService
 {
     private string $chat_id;
     private string|null $text;
-    private SendMeTelegram $telegram;
+    private Telegram $telegram;
+    private UserRepository $userRepository;
+    private TelegramTextRepository $textRepository;
 
     public function __construct(
-        SendMeTelegram             $telegram,
+        Telegram       $telegram,
+        UserRepository $userRepository,
+        TelegramTextRepository $textRepository,
     )
     {
         $this->telegram = $telegram;
         $this->chat_id = $telegram->ChatID();
         $this->text = $telegram->Text();
+        $this->userRepository = $userRepository;
+        $this->textRepository = $textRepository;
     }
 
     public function start(): bool
     {
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'Welcome']);
-        return true;
         if ($this->text == '/start') {
-            $this->repository->checkOrCreate($this->chat_id);
-            $this->chooseLanguage();
+            $user = $this->userRepository->checkOrCreate($this->chat_id);
+            if ($user['exists']) {
+                $this->alreadyRegistered();
+            } else {
+                $this->chooseLanguage();
+            }
         } else {
-            switch ($this->repository->page($this->chat_id)) {
+            switch ($this->userRepository->page($this->chat_id)) {
                 case TelegramHelper::START_STEP:
                     switch ($this->text) {
                         case TelegramHelper::UZBEK_LANGUAGE:
-                            $this->repository->language($this->chat_id, 'uz');
+                            $this->userRepository->language($this->chat_id, 'uz');
                             $this->askPhone();
                             break;
                         case TelegramHelper::RUSSIAN_LANGUAGE:
-                            $this->repository->language($this->chat_id, 'ru');
+                            $this->userRepository->language($this->chat_id, 'ru');
                             $this->askPhone();
                             break;
                         case TelegramHelper::ENGLISH_LANGUAGE:
-                            $this->repository->language($this->chat_id, 'en');
+                            $this->userRepository->language($this->chat_id, 'en');
                             $this->askPhone();
                             break;
                         default:
@@ -50,14 +60,14 @@ class SendMeTelegramService
                     break;
                 case TelegramHelper::PHONE_STEP:
                     if ($phone = TelegramHelper::checkPhone($this->text)) {
-                        $this->repository->phone($this->chat_id, $phone);
+                        $this->userRepository->phone($this->chat_id, $phone);
                         $this->showMainPage();
                     } else {
                         $this->askCorrectPhone();
                     }
                     break;
                 case TelegramHelper::MAIN_PAGE_STEP:
-                    $keyword = $this->textRepository->getKeyword($this->text, $this->repository->language($this->chat_id));
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
                     switch ($keyword) {
                         case 'add_card_button':
                             $this->askCard();
@@ -75,7 +85,7 @@ class SendMeTelegramService
                     }
                     break;
                 case TelegramHelper::ASK_CARD_PAGE:
-                    $text = $this->textRepository->getOrCreate('main_page_button', $this->repository->language($this->chat_id));
+                    $text = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
                     if ($this->text == $text) {
                         $this->showMainPage();
                     } else {
@@ -95,7 +105,7 @@ class SendMeTelegramService
                     }
                     break;
                 case TelegramHelper::ASK_SMS_TYPE:
-                    $keyword = $this->textRepository->getKeyword($this->text, $this->repository->language($this->chat_id));
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
                     switch ($keyword) {
                         case 'main_page_button':
                             $this->showMainPage();
@@ -149,8 +159,8 @@ class SendMeTelegramService
 
     private function chooseLanguage($is_setting = false): void
     {
-        $text = $this->textRepository->getOrCreate('choose_language', $this->repository->language($this->chat_id));
-        $is_setting ? $this->repository->page($this->chat_id, TelegramHelper::CHANGE_LANG_STEP) : $this->repository->page($this->chat_id, TelegramHelper::START_STEP);
+        $text = $this->textRepository->getOrCreate('choose_language_text', $this->userRepository->language($this->chat_id));
+        if ($is_setting) $this->userRepository->page($this->chat_id, TelegramHelper::CHANGE_LANG_STEP);
         $option = [[$this->telegram->buildKeyboardButton(TelegramHelper::UZBEK_LANGUAGE)], [$this->telegram->buildKeyboardButton(TelegramHelper::RUSSIAN_LANGUAGE), $this->telegram->buildKeyboardButton(TelegramHelper::ENGLISH_LANGUAGE)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
@@ -158,7 +168,7 @@ class SendMeTelegramService
 
     private function chooseButton(): void
     {
-        $text = $this->textRepository->getOrCreate('choose_button', $this->repository->language($this->chat_id));
+        $text = $this->textRepository->getOrCreate('choose_button_text', $this->userRepository->language($this->chat_id));
         $option = [[$this->telegram->buildKeyboardButton(TelegramHelper::UZBEK_LANGUAGE)], [$this->telegram->buildKeyboardButton(TelegramHelper::RUSSIAN_LANGUAGE), $this->telegram->buildKeyboardButton(TelegramHelper::ENGLISH_LANGUAGE)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
@@ -166,9 +176,9 @@ class SendMeTelegramService
 
     private function askPhone(): void
     {
-        $text = $this->textRepository->getOrCreate('ask_phone', $this->repository->language($this->chat_id));
-        $textButton = $this->textRepository->getOrCreate('ask_phone_button', $this->repository->language($this->chat_id));
-        $this->repository->page($this->chat_id, TelegramHelper::PHONE_STEP);
+        $text = $this->textRepository->getOrCreate('ask_phone_text', $this->userRepository->language($this->chat_id));
+        $textButton = $this->textRepository->getOrCreate('ask_phone_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::PHONE_STEP);
         $option = [[$this->telegram->buildKeyboardButton($textButton, true)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
@@ -176,8 +186,8 @@ class SendMeTelegramService
 
     private function askCorrectPhone(): void
     {
-        $text = $this->textRepository->getOrCreate('ask_correct_phone', $this->repository->language($this->chat_id));
-        $textButton = $this->textRepository->getOrCreate('ask_phone_button', $this->repository->language($this->chat_id));
+        $text = $this->textRepository->getOrCreate('ask_correct_phone_text', $this->userRepository->language($this->chat_id));
+        $textButton = $this->textRepository->getOrCreate('ask_phone_button', $this->userRepository->language($this->chat_id));
         $option = [[$this->telegram->buildKeyboardButton($textButton, true)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
@@ -185,12 +195,15 @@ class SendMeTelegramService
 
     public function showMainPage(): void
     {
-        $text = $this->textRepository->getOrCreate('main_page', $this->repository->language($this->chat_id));
-        $textButton_1 = $this->textRepository->getOrCreate('balance_button', $this->repository->language($this->chat_id));
-        $textButton_2 = $this->textRepository->getOrCreate('add_card_button', $this->repository->language($this->chat_id));
-        $textButton_3 = $this->textRepository->getOrCreate('settings_button', $this->repository->language($this->chat_id));
-        $this->repository->page($this->chat_id, TelegramHelper::MAIN_PAGE_STEP);
-        $option = [[$this->telegram->buildKeyboardButton($textButton_1)], [$this->telegram->buildKeyboardButton($textButton_2)], [$this->telegram->buildKeyboardButton($textButton_3)]];
+        $text = $this->textRepository->getOrCreate('main_page_text', $this->userRepository->language($this->chat_id));
+        $textButton_1 = $this->textRepository->getOrCreate('consultation_button', $this->userRepository->language($this->chat_id));
+        $textButton_2 = $this->textRepository->getOrCreate('help_button', $this->userRepository->language($this->chat_id));
+        $textButton_3 = $this->textRepository->getOrCreate('appeals_button', $this->userRepository->language($this->chat_id));
+        $textButton_4 = $this->textRepository->getOrCreate('history_of_appeals_button', $this->userRepository->language($this->chat_id));
+        $textButton_5 = $this->textRepository->getOrCreate('settings_button', $this->userRepository->language($this->chat_id));
+        $textButton_6 = $this->textRepository->getOrCreate('contact_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::MAIN_PAGE_STEP);
+        $option = [[[$this->telegram->buildKeyboardButton($textButton_1)], [$this->telegram->buildKeyboardButton($textButton_2)]], [[$this->telegram->buildKeyboardButton($textButton_3)], [$this->telegram->buildKeyboardButton($textButton_4)]], [[$this->telegram->buildKeyboardButton($textButton_5)], [$this->telegram->buildKeyboardButton($textButton_6)]]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
@@ -271,6 +284,13 @@ class SendMeTelegramService
     public function technicalWork(): void
     {
         $text = $this->textRepository->getOrCreate('technical_work', $this->repository->language($this->chat_id));
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+        $this->showMainPage();
+    }
+
+    public function alreadyRegistered(): void
+    {
+        $text = $this->textRepository->getOrCreate('already_registered_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();
     }

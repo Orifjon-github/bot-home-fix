@@ -11,7 +11,7 @@ if (file_exists('TelegramErrorLogger.php')) {
  *
  * @author Gabriele Grillo <gabry.grillo@alice.it>
  */
-class SendMeTelegram
+class Telegram
 {
     /**
      * Constant for type Inline Query.

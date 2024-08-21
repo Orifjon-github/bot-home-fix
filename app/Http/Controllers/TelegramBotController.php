@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\SendMeTelegramService;
+use App\Services\TelegramService;
 
 class TelegramBotController extends Controller
 {
-    private SendMeTelegramService $telegram_service;
+    private TelegramService $telegram_service;
 
-    public function __construct(SendMeTelegramService $telegram_service)
+    public function __construct(TelegramService $telegram_service)
     {
         $this->telegram_service = $telegram_service;
     }
-    public function start(): bool
+    public function start()
     {
         return $this->telegram_service->start();
     }

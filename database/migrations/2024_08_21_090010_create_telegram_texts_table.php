@@ -11,14 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
+        Schema::create('telegram_texts', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->nullable();
-            $table->string('phone')->unique()->nullable();
-            $table->string('chat_id')->unique();
-            $table->enum('language', ['ru', 'en', 'uz'])->nullable();
-            $table->string('step')->default('start');
-            $table->rememberToken();
+            $table->string('keyword')->index();
+            $table->text('uz')->nullable();
+            $table->text('ru')->nullable();
+            $table->text('en')->nullable();
             $table->timestamps();
         });
     }
@@ -28,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('telegram_texts');
     }
 };
