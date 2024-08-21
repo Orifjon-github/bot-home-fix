@@ -99,7 +99,7 @@ class SendMeTelegram
      */
     public function __construct($log_errors = true, array $proxy = [])
     {
-        $this->bot_token = env('SENDME_BOT_TOKEN');
+        $this->bot_token = env('TELEGRAM_BOT_TOKEN');
         $this->data = $this->getData();
         $this->log_errors = $log_errors;
         $this->proxy = $proxy;
