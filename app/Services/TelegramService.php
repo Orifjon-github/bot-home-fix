@@ -203,7 +203,7 @@ class TelegramService
         $textButton_5 = $this->textRepository->getOrCreate('settings_button', $this->userRepository->language($this->chat_id));
         $textButton_6 = $this->textRepository->getOrCreate('contact_button', $this->userRepository->language($this->chat_id));
         $this->userRepository->page($this->chat_id, TelegramHelper::MAIN_PAGE_STEP);
-        $option = [[[$this->telegram->buildKeyboardButton($textButton_1)], [$this->telegram->buildKeyboardButton($textButton_2)]], [[$this->telegram->buildKeyboardButton($textButton_3)], [$this->telegram->buildKeyboardButton($textButton_4)]], [[$this->telegram->buildKeyboardButton($textButton_5)], [$this->telegram->buildKeyboardButton($textButton_6)]]];
+        $option = [[$this->telegram->buildKeyboardButton($textButton_1), $this->telegram->buildKeyboardButton($textButton_3), $this->telegram->buildKeyboardButton($textButton_5)], [$this->telegram->buildKeyboardButton($textButton_2), $this->telegram->buildKeyboardButton($textButton_4), $this->telegram->buildKeyboardButton($textButton_6)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
