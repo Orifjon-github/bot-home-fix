@@ -35,7 +35,7 @@ class UserRepository
 
     public function language($chat_id, $language=null)
     {
-        return $language ? $this->model->updateOrCreate(['chat_id' => $chat_id], ['chat_id' => $chat_id, 'lang' => $language]) : $this->model::where('chat_id', $chat_id)->first()->lang;
+        return $language ? $this->model->updateOrCreate(['chat_id' => $chat_id], ['chat_id' => $chat_id, 'language' => $language]) : $this->model::where('chat_id', $chat_id)->first()->language;
     }
 
     public function phone($chat_id, $phone=null) {

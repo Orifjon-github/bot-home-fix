@@ -85,8 +85,8 @@ class Telegram
     private $bot_token = '';
     private $data = [];
     private $updates = [];
-    private $log_errors;
     private $proxy;
+    private LogService $logService;
 
     /// Class constructor
 
@@ -97,11 +97,11 @@ class Telegram
      * \param $proxy array with the proxy configuration (url, port, type, auth)
      * \return an instance of the class.
      */
-    public function __construct($log_errors = true)
+    public function __construct(LogService $logService)
     {
         $this->bot_token = env('TELEGRAM_BOT_TOKEN');
         $this->data = $this->getData();
-        $this->log_errors = $log_errors;
+        $this->logService = $logService;
         $this->proxy = [
             'url' => '10.8.88.22',
             'port' => '8080'
@@ -1763,6 +1763,8 @@ class Telegram
             $url = $url.'?chat_id='.$content['chat_id'];
             unset($content['chat_id']);
         }
+        $logID = uniqid();
+        $this->logService->request('telegram', $logID, $url, json_encode($content));
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_HEADER, false);
@@ -1795,18 +1797,11 @@ class Telegram
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         $result = curl_exec($ch);
         if ($result === false) {
-            $result = json_encode(
-                ['ok' => false, 'curl_error_code' => curl_errno($ch), 'curl_error' => curl_error($ch)]
-            );
+            $this->logService->response('telegram', $logID, curl_errno($ch), curl_error($ch));
+            return false;
         }
         curl_close($ch);
-        if ($this->log_errors) {
-            if (class_exists('TelegramErrorLogger')) {
-                $loggerArray = ($this->getData() == null) ? [$content] : [$this->getData(), $content];
-                TelegramErrorLogger::log(json_decode($result, true), $loggerArray);
-            }
-        }
-
+        $this->logService->response('telegram', $logID, curl_errno($ch), $result);
         return $result;
     }
 }

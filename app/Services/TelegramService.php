@@ -30,8 +30,6 @@ class TelegramService
 
     public function start(): bool
     {
-//        var_dump($this->chat_id);
-//        die();
         if ($this->text == '/start') {
             $user = $this->userRepository->checkOrCreate($this->chat_id);
             if ($user['exists']) {

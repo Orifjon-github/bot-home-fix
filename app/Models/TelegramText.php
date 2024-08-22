@@ -12,4 +12,6 @@ use Illuminate\Database\Eloquent\Model;
 class TelegramText extends Model
 {
     use HasFactory;
+
+    protected $guarded = [];
 }

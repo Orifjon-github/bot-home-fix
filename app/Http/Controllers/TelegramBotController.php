@@ -12,7 +12,7 @@ class TelegramBotController extends Controller
     {
         $this->telegram_service = $telegram_service;
     }
-    public function start()
+    public function start(): bool
     {
         return $this->telegram_service->start();
     }
