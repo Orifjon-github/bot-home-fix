@@ -75,13 +75,12 @@ class TelegramService
                         case 'settings_button':
                             $this->showSettings();
                             break;
-                        case 'balance_button':
-                            $this->showBalance();
+                        case 'contact_button':
+                            $this->showContact();
                             break;
                         default:
                             $this->showMainPage();
                             break;
-
                     }
                     break;
                 case TelegramHelper::ASK_CARD_PAGE:
@@ -122,10 +121,13 @@ class TelegramService
                     }
                     break;
                 case TelegramHelper::SETTINGS_STEP:
-                    $keyword = $this->textRepository->getKeyword($this->text, $this->repository->language($this->chat_id));
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
                     switch ($keyword) {
                         case 'change_language_button':
                             $this->chooseLanguage(true);
+                            break;
+                        case 'delete_account_button':
+                            $this->deleteAccount();
                             break;
                         case 'main_page_button':
                             $this->showMainPage();
@@ -133,6 +135,21 @@ class TelegramService
                         default:
                             $this->chooseButton();
                             break;
+                    }
+                    break;
+                case TelegramHelper::DELETE_ACCOUNT_STEP:
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
+                    switch ($keyword) {
+                        case 'confirm_delete_account_button':
+                            $this->confirmDeleteAccount();
+                            break;
+                        case 'cancel_delete_account_button':
+                            $this->cancelDeleteAccount();
+                            break;
+                        default:
+                            $this->chooseButton();
+                            break;
+
                     }
                     break;
                 case TelegramHelper::CHANGE_LANG_STEP:
@@ -249,27 +266,45 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
-    public function successAdd($type): void
+    public function deleteAccount(): void
     {
-        $this->cardRepository->setTypeAndActivate($this->chat_id, $type);
-        $text = $this->textRepository->getOrCreate('success_add_card', $this->repository->language($this->chat_id));
+        $text = $this->textRepository->getOrCreate('confirm_delete_account_text', $this->userRepository->language($this->chat_id));
+        $textConfirm = $this->textRepository->getOrCreate('confirm_delete_account_button', $this->userRepository->language($this->chat_id));
+        $textCancel = $this->textRepository->getOrCreate('cancel_delete_account_button', $this->userRepository->language($this->chat_id));
+        $option = [[$this->telegram->buildKeyboardButton($textCancel), $this->telegram->buildKeyboardButton($textConfirm)]];
+        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+    }
+
+    public function cancelDeleteAccount(): void
+    {
+        $text = $this->textRepository->getOrCreate('cancel_delete_account_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();
     }
-
-    public function showBalance(): void
+    public function confirmDeleteAccount(): void
     {
-        $text = $this->cardRepository->getAllCardsBalance($this->chat_id);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+        $text = $this->textRepository->getOrCreate('success_delete_account_text', $this->userRepository->language($this->chat_id));
+        $textRegister = $this->textRepository->getOrCreate('register_button', $this->userRepository->language($this->chat_id));
+        $option = [[$this->telegram->buildKeyboardButton($textRegister)]];
+        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+    }
+
+    public function showContact(): void
+    {
+        $text = $this->textRepository->getOrCreate('contact_text', $this->userRepository->language($this->chat_id));
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html', 'disable_web_page_preview' => true]);
     }
 
     public function showSettings(): void
     {
-        $text = $this->textRepository->getOrCreate('main_page', $this->repository->language($this->chat_id));
-        $textButton = $this->textRepository->getOrCreate('change_language_button', $this->repository->language($this->chat_id));
-        $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->repository->language($this->chat_id));
-        $this->repository->page($this->chat_id, TelegramHelper::SETTINGS_STEP);
-        $option = [[$this->telegram->buildKeyboardButton($textButton)], [$this->telegram->buildKeyboardButton($textButtonMain)]];
+        $text = $this->textRepository->getOrCreate('main_page_text', $this->userRepository->language($this->chat_id));
+        $textButtonChangeLang = $this->textRepository->getOrCreate('change_language_button', $this->userRepository->language($this->chat_id));
+        $textButtonDelete = $this->textRepository->getOrCreate('delete_account_button', $this->userRepository->language($this->chat_id));
+        $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::SETTINGS_STEP);
+        $option = [[$this->telegram->buildKeyboardButton($textButtonChangeLang), $this->telegram->buildKeyboardButton($textButtonDelete)], [$this->telegram->buildKeyboardButton($textButtonMain)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }

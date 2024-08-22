@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('chat_id')->unique();
             $table->enum('language', ['ru', 'en', 'uz'])->nullable();
             $table->string('step')->default('start');
+            $table->enum('status', ['active', 'delete-account'])->default('active');
             $table->rememberToken();
             $table->timestamps();
         });
