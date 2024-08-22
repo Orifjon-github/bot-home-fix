@@ -30,6 +30,8 @@ class TelegramService
 
     public function start(): bool
     {
+//        var_dump($this->chat_id);
+//        die();
         if ($this->text == '/start') {
             $user = $this->userRepository->checkOrCreate($this->chat_id);
             if ($user['exists']) {
@@ -159,7 +161,7 @@ class TelegramService
 
     private function chooseLanguage($is_setting = false): void
     {
-        $text = $this->textRepository->getOrCreate('choose_language_text', $this->userRepository->language($this->chat_id));
+        $text = TelegramHelper::CHOOSE_LANGUAGE_TEXT;
         if ($is_setting) $this->userRepository->page($this->chat_id, TelegramHelper::CHANGE_LANG_STEP);
         $option = [[$this->telegram->buildKeyboardButton(TelegramHelper::UZBEK_LANGUAGE)], [$this->telegram->buildKeyboardButton(TelegramHelper::RUSSIAN_LANGUAGE), $this->telegram->buildKeyboardButton(TelegramHelper::ENGLISH_LANGUAGE)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);

@@ -15,13 +15,13 @@ class UserRepository
     public function checkOrCreate(string $chat_id): array
     {
         $user = $this->model->where('chat_id', $chat_id)->first();
-        if ($user && !empty($user->language) && !empty($user->phone)) {
+        if ($user && $user->language !== null && $user->phone !== null) {
             return [
                 'exists' => true,
                 'user' => $user
             ];
         }
-        $user = $this->model->create(['chat_id' => $chat_id]);
+        $user = $this->model->updateOrCreate(['chat_id' => $chat_id], ['chat_id' => $chat_id]);
         return [
             'exists' => false,
             'user' => $user
