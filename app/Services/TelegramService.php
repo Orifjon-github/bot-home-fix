@@ -161,8 +161,8 @@ class TelegramService
                     if ($this->text == 'back_button') {
                         $this->back(TelegramHelper::APPEALS_STEP, 'askAppealTitle');
                     } else {
-                        $this->appealRepository->updateOrCreateAppeal($this->chat_id, ['title' => $this->text]);
-                        $this->askAppealDescription();
+                        $this->appealRepository->updateOrCreateAppeal($this->chat_id, ['message' => $this->text]);
+                        $this->successAcceptAppeal();
                     }
             }
         }
