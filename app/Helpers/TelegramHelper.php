@@ -14,9 +14,9 @@ class TelegramHelper
           MAIN_PAGE_STEP = 'main',
           APPEALS_STEP = 'appeals',
           ASK_APPEAL_TITLE = 'askAppealTitle',
+          ASK_APPEAL_DESCRIPTION = 'ask_sms_type',
           SETTINGS_STEP = 'settings',
           CHANGE_LANG_STEP = 'change_lang',
-          ASK_SMS_TYPE = 'ask_sms_type',
           DELETE_ACCOUNT_STEP = 'delete_account',
           CHOOSE_LANGUAGE_TEXT = "Muloqot uchun tilni tanlang\n\nВыберите язык для общения\n\nSelect language";
 

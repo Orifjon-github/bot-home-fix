@@ -21,7 +21,7 @@ class AppealRepository
         return $this->appealModel->where($attr, $value)->where('enable', 1)->first() ?? null;
     }
 
-    public function createAppeal($chat_id, array $data)
+    public function updateOrCreateAppeal($chat_id, array $data)
     {
         $user = User::where('chat_id', $chat_id)->first();
         return $user->chats()->updateOrCreate(['user_id' => $user->id], $data);

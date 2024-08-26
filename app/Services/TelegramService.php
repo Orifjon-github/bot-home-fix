@@ -141,12 +141,28 @@ class TelegramService
                     $attr = ($lang == 'uz') ? 'name' : "name_$lang";
                     $appeal = $this->appealRepository->getAppealType($attr, $this->text);
                     if ($appeal) {
-                        $this->appealRepository->createAppeal($this->chat_id, ['theme' => $appeal->$attr]);
+                        $this->appealRepository->updateOrCreateAppeal($this->chat_id, ['theme' => $appeal->$attr]);
                         $this->askAppealTitle();
                     } elseif ($this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id)) == 'main_page_button') {
                         $this->showMainPage();
                     } else {
                         $this->chooseButton();
+                    }
+                    break;
+                case TelegramHelper::ASK_APPEAL_TITLE:
+                    if ($this->text == 'back_button') {
+                        $this->back(TelegramHelper::APPEALS_STEP,'showAppeals');
+                    } else {
+                        $this->appealRepository->updateOrCreateAppeal($this->chat_id, ['title' => $this->text]);
+                        $this->askAppealDescription();
+                    }
+                    break;
+                case TelegramHelper::ASK_APPEAL_DESCRIPTION:
+                    if ($this->text == 'back_button') {
+                        $this->back(TelegramHelper::APPEALS_STEP, 'askAppealTitle');
+                    } else {
+                        $this->appealRepository->updateOrCreateAppeal($this->chat_id, ['title' => $this->text]);
+                        $this->askAppealDescription();
                     }
             }
         }
@@ -276,7 +292,21 @@ class TelegramService
     {
         $text = $this->textRepository->getOrCreate('ask_appeal_title_text', $this->userRepository->language($this->chat_id));
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_APPEAL_TITLE);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html', 'disable_web_page_preview' => true]);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $this->backButton(), 'parse_mode' => 'html', 'disable_web_page_preview' => true]);
+    }
+
+    public function askAppealDescription(): void
+    {
+        $text = $this->textRepository->getOrCreate('ask_appeal_description_text', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_APPEAL_DESCRIPTION);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $this->backButton(), 'parse_mode' => 'html', 'disable_web_page_preview' => true]);
+    }
+
+    public function successAcceptAppeal(): void
+    {
+        $text = $this->textRepository->getOrCreate('success_accept_appeal_text', $this->userRepository->language($this->chat_id));
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+        $this->showMainPage();
     }
 
     public function showSettings(): void
@@ -312,11 +342,17 @@ class TelegramService
         $this->showMainPage();
     }
 
-    private function back($step, $function): string
+    private function back($step, $function): void
     {
         $this->userRepository->page($this->chat_id, $step);
-        $function();
-        return 1;
+        $this->$function();
+    }
+
+    private function backButton(): bool|string
+    {
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $option = [[$this->telegram->buildKeyboardButton($backButton)]];
+        return $this->telegram->buildKeyBoard($option, false, true);
     }
 
     public function handleRegistration(): void
