@@ -17,6 +17,8 @@ return new class extends Migration
             $table->integer('admin_id')->nullable();
             $table->enum('status', ['create', 'active', 'close', 'complete'])->default('create');
             $table->string('theme')->nullable();
+            $table->string('title')->nullable();
+            $table->text('message')->nullable();
             $table->timestamps();
         });
     }

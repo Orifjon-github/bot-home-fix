@@ -12,8 +12,8 @@ class TelegramHelper
           START_STEP = 'start',
           PHONE_STEP = 'askPhone',
           MAIN_PAGE_STEP = 'main',
-          ASK_CARD_PAGE = 'askCard',
-          ASK_EXPIRY = 'askExpiry',
+          APPEALS_STEP = 'appeals',
+          ASK_APPEAL_TITLE = 'askAppealTitle',
           SETTINGS_STEP = 'settings',
           CHANGE_LANG_STEP = 'change_lang',
           ASK_SMS_TYPE = 'ask_sms_type',
@@ -29,32 +29,17 @@ class TelegramHelper
         return false;
     }
 
-    public static function checkCard($card): bool
-    {
-
-        return false;
-    }
-
-    public static function luhnAlgorithm($pan): bool
-    {
-        $number = strrev($pan);
-        $sum = 0;
-        for ($i = 0, $j = strlen($number); $i < $j; $i++) {
-            if (($i % 2) == 0) {
-                $val = $number[$i];
-            } else {
-                $val = $number[$i] * 2;
-                if ($val > 9) {
-                    $val -= 9;
-                }
-            }
-            $sum += $val;
+    public static function getValue($model, $language, $attribute='name') {
+        $mainAttr = $attribute;
+        switch ($language) {
+            case 'ru':
+                $attribute .= '_ru';
+                return $model->$attribute ?? $model->$mainAttr;
+            case 'en':
+                $attribute .= '_en';
+                return $model->$attribute ?? $model->$mainAttr;
+            default:
+                return $model->$attribute;
         }
-        return (($sum % 10) === 0);
-    }
-
-    public static function expiry($date, $format = 'my'): string
-    {
-        return DateTime::createFromFormat($format, $date)->format('ym');
     }
 }
