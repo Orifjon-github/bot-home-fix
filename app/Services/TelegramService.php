@@ -152,7 +152,7 @@ class TelegramService
                 case TelegramHelper::ASK_APPEAL_TITLE:
                     if ($this->text == 'back_button') {
                         $this->back(TelegramHelper::APPEALS_STEP, 'showAppeals');
-                    } elseif ($this->text = 'main_page_button') {
+                    } elseif ($this->text == 'main_page_button') {
                         $this->showMainPage();
                     } else {
                         $this->appealRepository->updateOrCreateAppeal($this->chat_id, ['title' => $this->text]);
@@ -162,7 +162,7 @@ class TelegramService
                 case TelegramHelper::ASK_APPEAL_DESCRIPTION:
                     if ($this->text == 'back_button') {
                         $this->back(TelegramHelper::APPEALS_STEP, 'askAppealTitle');
-                    } elseif ($this->text = 'main_page_button') {
+                    } elseif ($this->text == 'main_page_button') {
                         $this->showMainPage();
                     } else {
                         $this->appealRepository->updateOrCreateAppeal($this->chat_id, ['message' => $this->text, 'status' => 'ready']);
