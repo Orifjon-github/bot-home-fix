@@ -27,4 +27,11 @@ class TelegramTextRepository
         if ($keyword) return $keyword->keyword;
         return false;
     }
+
+    public function checkTextWithKeyboard(string $text, string $keyboard='register_button'): bool
+    {
+        $model = $this->model->where('keyword', $keyboard)->first();
+        if (!$model) return false;
+        return in_array($text, [$model->ru, $model->en, $model->uz]);
+    }
 }

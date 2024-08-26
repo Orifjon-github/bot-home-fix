@@ -19,10 +19,10 @@ class TelegramService
     private AppealRepository $appealRepository;
 
     public function __construct(
-        Telegram       $telegram,
-        UserRepository $userRepository,
+        Telegram               $telegram,
+        UserRepository         $userRepository,
         TelegramTextRepository $textRepository,
-        AppealRepository $appealRepository,
+        AppealRepository       $appealRepository,
     )
     {
         $this->telegram = $telegram;
@@ -35,13 +35,8 @@ class TelegramService
 
     public function start(): bool
     {
-        if ($this->text == '/start' || $this->textRepository->getOrCreate('register_button', $this->userRepository->language($this->chat_id)) == $this->text) {
-            $user = $this->userRepository->checkOrCreate($this->chat_id);
-            if ($user['exists']) {
-                $this->alreadyRegistered();
-            } else {
-                $this->chooseLanguage();
-            }
+        if ($this->text == '/start' || $this->textRepository->checkTextWithKeyboard($this->text)) {
+            $this->handleRegistration();
         } else {
             switch ($this->userRepository->page($this->chat_id)) {
                 case TelegramHelper::START_STEP:
@@ -226,6 +221,7 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();
     }
+
     public function confirmDeleteAccount(): void
     {
         $this->userRepository->delete($this->chat_id);
@@ -242,6 +238,7 @@ class TelegramService
         $text = $this->textRepository->getOrCreate('contact_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html', 'disable_web_page_preview' => true]);
     }
+
     public function showHelp(): void
     {
         $text = $this->textRepository->getOrCreate('help_text', $this->userRepository->language($this->chat_id));
@@ -319,5 +316,15 @@ class TelegramService
         $this->userRepository->page($this->chat_id, $step);
         $function();
         return 1;
+    }
+
+    public function handleRegistration(): void
+    {
+        $user = $this->userRepository->checkOrCreate($this->chat_id);
+        if ($user['exists']) {
+            $this->alreadyRegistered();
+        } else {
+            $this->chooseLanguage();
+        }
     }
 }
