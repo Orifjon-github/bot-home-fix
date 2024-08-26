@@ -141,7 +141,7 @@ class TelegramService
                     $attr = ($lang == 'uz') ? 'name' : "name_$lang";
                     $appeal = $this->appealRepository->getAppealType($attr, $this->text);
                     if ($appeal) {
-                        $this->appealRepository->createAppeal($this->chat_id, ['chat_id' => $this->chat_id, 'theme' => $appeal->$attr]);
+                        $this->appealRepository->createAppeal($this->chat_id, ['theme' => $appeal->$attr]);
                         $this->askAppealTitle();
                     } elseif ($this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id)) == 'main_page_button') {
                         $this->showMainPage();

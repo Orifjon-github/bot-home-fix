@@ -28,9 +28,7 @@ class Logger
         try {
             $logID = uniqid();
             $this->logService->request('elk', $logID, $request->getRequestUri(), $request->getContent());
-            $response = $next($request);
-            $this->logService->response('elk', $logID, $response->getStatusCode(), $response->getContent());
-            return $response;
+            return $next($request);
         } catch (\Exception $exception) {
             Log::error($exception->getMessage());
             return $next($request);

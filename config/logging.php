@@ -2,7 +2,7 @@
 
 return [
 
-    'default' => env('LOG_CHANNEL', 'stack'),
+    'default' => env('LOG_CHANNEL', 'single'),
 
     'deprecations' => [
         'channel' => env('LOG_DEPRECATIONS_CHANNEL', 'null'),
@@ -10,10 +10,6 @@ return [
     ],
 
     'channels' => [
-        'emergency' => [
-            'path' => storage_path('logs/laravel.log'),
-        ],
-
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
@@ -36,7 +32,7 @@ return [
         ],
         'telegram' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/elk/elk.log'),
+            'path' => storage_path('logs/telegram/telegram.log'),
             'level' => 'debug',
             'days' => 365
         ],

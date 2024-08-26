@@ -31,4 +31,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'auth_token' => env('AUTH_TOKEN_SERVICE'),
+
+    'notify_service' => [
+        'url' => env('NOTIFY_SERVICE_URL'),
+    ],
+
 ];
