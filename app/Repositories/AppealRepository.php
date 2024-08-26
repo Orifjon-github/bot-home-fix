@@ -16,7 +16,7 @@ class AppealRepository
         $this->appealModel = $appealModel;
     }
 
-    public function getAppealType($attr, $value): ?array
+    public function getAppealType($attr, $value)
     {
         return $this->appealModel->where($attr, $value)->where('enable', 1)->first() ?? null;
     }
@@ -24,7 +24,6 @@ class AppealRepository
     public function createAppeal($chat_id, array $data): AppealType
     {
         $user = User::where('chat_id', $chat_id)->first();
-        return $user->chats()->updateOrCreate(['chat_id' => $chat_id], $data);
-
+        return $user->chats()->updateOrCreate(['user_id' => $user->id], $data);
     }
 }

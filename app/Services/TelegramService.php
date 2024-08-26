@@ -8,6 +8,7 @@ use App\Models\AppealType;
 use App\Repositories\AppealRepository;
 use App\Repositories\TelegramTextRepository;
 use App\Repositories\UserRepository;
+use Illuminate\Support\Facades\Log;
 
 class TelegramService
 {
