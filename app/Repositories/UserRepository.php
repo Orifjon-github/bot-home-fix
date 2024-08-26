@@ -15,7 +15,7 @@ class UserRepository
     public function checkOrCreate(string $chat_id): array
     {
         $user = $this->model->where('chat_id', $chat_id)->first();
-        if ($user && $user->language !== null && $user->phone !== null) {
+        if ($user && $user->language !== null && $user->phone !== null && $user->status == 'active') {
             return [
                 'exists' => true,
                 'user' => $user
