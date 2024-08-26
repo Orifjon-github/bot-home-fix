@@ -24,6 +24,12 @@ class AppealRepository
     public function updateOrCreateAppeal($chat_id, array $data)
     {
         $user = User::where('chat_id', $chat_id)->first();
-        return $user->chats()->updateOrCreate(['user_id' => $user->id], $data);
+        $chat = $user->chats()->where('status', 'create')->first();
+
+        if ($chat) {
+            return $chat->update($data);
+        } else {
+            return $user->chats()->create($data);
+        }
     }
 }

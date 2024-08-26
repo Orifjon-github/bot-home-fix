@@ -151,7 +151,9 @@ class TelegramService
                     break;
                 case TelegramHelper::ASK_APPEAL_TITLE:
                     if ($this->text == 'back_button') {
-                        $this->back(TelegramHelper::APPEALS_STEP,'showAppeals');
+                        $this->back(TelegramHelper::APPEALS_STEP, 'showAppeals');
+                    } elseif ($this->text = 'main_page_button') {
+                        $this->showMainPage();
                     } else {
                         $this->appealRepository->updateOrCreateAppeal($this->chat_id, ['title' => $this->text]);
                         $this->askAppealDescription();
@@ -160,8 +162,10 @@ class TelegramService
                 case TelegramHelper::ASK_APPEAL_DESCRIPTION:
                     if ($this->text == 'back_button') {
                         $this->back(TelegramHelper::APPEALS_STEP, 'askAppealTitle');
+                    } elseif ($this->text = 'main_page_button') {
+                        $this->showMainPage();
                     } else {
-                        $this->appealRepository->updateOrCreateAppeal($this->chat_id, ['message' => $this->text]);
+                        $this->appealRepository->updateOrCreateAppeal($this->chat_id, ['message' => $this->text, 'status' => 'ready']);
                         $this->successAcceptAppeal();
                     }
             }
@@ -351,7 +355,8 @@ class TelegramService
     private function backButton(): bool|string
     {
         $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
-        $option = [[$this->telegram->buildKeyboardButton($backButton)]];
+        $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
+        $option = [[$this->telegram->buildKeyboardButton($backButton), $this->telegram->buildKeyboardButton($textButtonMain)]];
         return $this->telegram->buildKeyBoard($option, false, true);
     }
 
