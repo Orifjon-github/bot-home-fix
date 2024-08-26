@@ -37,7 +37,7 @@ class Handler extends ExceptionHandler
         $notify = new NotifyService(new LogService());
         try {
             $place = explode('/', $e->getFile());
-            $text = MainHelper::formatter('service', 'sendMe') . "\n" . MainHelper::formatter('place', end($place)) . "\n" . MainHelper::formatter('line', $e->getLine()) . "\n" . MainHelper::formatter('reason', $e->getMessage());
+            $text = MainHelper::formatter('service', 'IBank Support') . "\n" . MainHelper::formatter('place', end($place)) . "\n" . MainHelper::formatter('line', $e->getLine()) . "\n" . MainHelper::formatter('reason', $e->getMessage());
             $notify->telegram($text);
             return 1;
         } catch (Exception $exception) {

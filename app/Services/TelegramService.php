@@ -55,7 +55,7 @@ class TelegramService
                             $this->askPhone();
                             break;
                         default:
-                            $this->chooseButton();
+                            $this->chooseLanguage();
                             break;
                     }
                     break;
@@ -100,7 +100,7 @@ class TelegramService
                             $this->showMainPage();
                             break;
                         default:
-                            $this->chooseButton();
+                            $this->showSettings();
                             break;
                     }
                     break;
@@ -114,7 +114,7 @@ class TelegramService
                             $this->cancelDeleteAccount();
                             break;
                         default:
-                            $this->chooseButton();
+                            $this->deleteAccount();
                             break;
 
                     }
@@ -131,7 +131,7 @@ class TelegramService
                             $this->userRepository->language($this->chat_id, 'en');
                             break;
                         default:
-                            $this->chooseButton();
+                            $this->chooseLanguage();
                             break;
                     }
                     $this->successChangeLang();
@@ -146,7 +146,7 @@ class TelegramService
                     } elseif ($this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id)) == 'main_page_button') {
                         $this->showMainPage();
                     } else {
-                        $this->chooseButton();
+                        $this->showAppeals();
                     }
                     break;
                 case TelegramHelper::ASK_APPEAL_TITLE:
@@ -177,14 +177,6 @@ class TelegramService
     {
         $text = TelegramHelper::CHOOSE_LANGUAGE_TEXT;
         if ($is_setting) $this->userRepository->page($this->chat_id, TelegramHelper::CHANGE_LANG_STEP);
-        $option = [[$this->telegram->buildKeyboardButton(TelegramHelper::UZBEK_LANGUAGE)], [$this->telegram->buildKeyboardButton(TelegramHelper::RUSSIAN_LANGUAGE), $this->telegram->buildKeyboardButton(TelegramHelper::ENGLISH_LANGUAGE)]];
-        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
-    }
-
-    private function chooseButton(): void
-    {
-        $text = $this->textRepository->getOrCreate('choose_button_text', $this->userRepository->language($this->chat_id));
         $option = [[$this->telegram->buildKeyboardButton(TelegramHelper::UZBEK_LANGUAGE)], [$this->telegram->buildKeyboardButton(TelegramHelper::RUSSIAN_LANGUAGE), $this->telegram->buildKeyboardButton(TelegramHelper::ENGLISH_LANGUAGE)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
