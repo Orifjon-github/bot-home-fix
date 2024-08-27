@@ -23,7 +23,7 @@ Route::controller(MainController::class)
     ->group(function () {
         Route::prefix('chat')->group(function () {
             Route::get('opens', 'openChats');
-            Route::get('detail/{id}', 'chatDetail');
+            Route::post('detail/{id}', 'chatDetail');
             Route::post('admin', 'adminChats');
         });
     });

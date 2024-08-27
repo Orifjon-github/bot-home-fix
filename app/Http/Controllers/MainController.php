@@ -26,11 +26,13 @@ class MainController extends Controller
     public function chatDetail($id, Request $request): JsonResponse
     {
         $adminID = $request->input('admin_id');
+        if (!$adminID) return $this->error('admin_id is required');
+
         $chat = Chat::find($id);
         if (!$chat) return $this->error('Chat not found');
 
         if ($chat->status != 'ready') {
-            if (!$adminID || $chat->admin_id != $adminID) return $this->error('You cannot see another employee\'s active chat');
+            if ($chat->admin_id != $adminID) return $this->error('You cannot see another employee\'s active chat');
         };
         return $this->success(ChatDetailResource::make($chat));
     }
