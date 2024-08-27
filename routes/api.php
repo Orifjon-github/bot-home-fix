@@ -19,10 +19,10 @@ Route::post('/start', [TelegramBotController::class, 'start']);
 Route::get('/ping', [MainController::class, 'ping']);
 
 Route::controller(MainController::class)
-    ->middleware('auth')
+    ->middleware(['auth', 'elk'])
     ->group(function () {
         Route::prefix('chat')->group(function () {
-            Route::get('open', 'openChats');
+            Route::get('opens', 'openChats');
             Route::get('detail/{id}', 'chatDetail');
             Route::post('admin', 'adminChats');
         });

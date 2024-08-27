@@ -19,7 +19,7 @@ class MainController extends Controller
     }
     public function openChats(Request $request): JsonResponse
     {
-        $openChats = Chat::where('status', 'create')->get();
+        $openChats = Chat::where('status', 'ready')->get();
         return $this->success(ChatResource::collection($openChats));
     }
 
@@ -29,7 +29,7 @@ class MainController extends Controller
         $chat = Chat::find($id);
         if (!$chat) return $this->error('Chat not found');
 
-        if ($chat->status != 'create') {
+        if ($chat->status != 'ready') {
             if (!$adminID || $chat->admin_id != $adminID) return $this->error('You cannot see another employee\'s active chat');
         };
         return $this->success(ChatDetailResource::make($chat));

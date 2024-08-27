@@ -27,8 +27,14 @@ class Logger
     {
         try {
             $logID = uniqid();
-            $this->logService->request('elk', $logID, $request->getRequestUri(), $request->getContent());
-            return $next($request);
+            $content = 'Xml';
+            if (request()->isXml()) {
+                $content = json_encode(request()->xml(), JSON_UNESCAPED_UNICODE);
+            }
+            $this->logService->request('elk', $logID, $request->getRequestUri(), $content);
+            $response = $next($request);
+            $this->logService->response('elk', $logID, $response->getStatusCode(), $response->getContent());
+            return $response;
         } catch (\Exception $exception) {
             Log::error($exception->getMessage());
             return $next($request);

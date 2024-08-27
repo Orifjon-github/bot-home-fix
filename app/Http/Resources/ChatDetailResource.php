@@ -9,6 +9,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $theme
  * @property mixed $id
  * @property mixed $messages
+ * @property mixed $message
+ * @property mixed $title
  * @method messages()
  */
 class ChatDetailResource extends JsonResource
@@ -18,6 +20,9 @@ class ChatDetailResource extends JsonResource
         return [
             'id' => $this->id,
             'theme' => $this->theme,
+            'title' => $this->title,
+            'message' => $this->message,
+            'files' => 'soon',
             'messages' => $this->messages
         ];
     }

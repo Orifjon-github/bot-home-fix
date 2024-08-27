@@ -9,17 +9,20 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $theme
  * @property mixed $id
  * @property mixed $messages
+ * @property mixed $title
+ * @property mixed $message
  * @method messages()
  */
 class ChatResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $message = $this->messages()->first();
         return [
             'id' => $this->id,
             'theme' => $this->theme,
-            'message' => $message ? $message->message : null,
+            'title' => $this->title,
+            'message' => $this->message,
+            'files' => 'soon'
         ];
     }
 }
