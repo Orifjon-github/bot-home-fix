@@ -27,11 +27,7 @@ class Logger
     {
         try {
             $logID = uniqid();
-            $content = 'Xml';
-            if (request()->isXml()) {
-                $content = json_encode(request()->xml(), JSON_UNESCAPED_UNICODE);
-            }
-            $this->logService->request('elk', $logID, $request->getRequestUri(), $content);
+            $this->logService->request('elk', $logID, $request->getRequestUri(), $request->getContent());
             $response = $next($request);
             $this->logService->response('elk', $logID, $response->getStatusCode(), $response->getContent());
             return $response;
