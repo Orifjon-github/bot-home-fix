@@ -32,17 +32,17 @@ class Handler extends ExceptionHandler
         });
     }
 
-    public function render($request, Throwable $e): int
+    public function render($request, Throwable $e): JsonResponse
     {
         $notify = new NotifyService(new LogService());
         try {
             $place = explode('/', $e->getFile());
             $text = MainHelper::formatter('service', 'IBank Support') . "\n" . MainHelper::formatter('place', end($place)) . "\n" . MainHelper::formatter('line', $e->getLine()) . "\n" . MainHelper::formatter('reason', $e->getMessage());
             $notify->telegram($text);
-            return 1;
+            return $this->error('Server error');
         } catch (Exception $exception) {
             $notify->telegram('IBank-Support: ' . $exception->getMessage());
-            return 1;
+            return $this->error('Server error');
         }
     }
 }
