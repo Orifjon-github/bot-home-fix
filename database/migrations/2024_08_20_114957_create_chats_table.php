@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users');
             $table->integer('admin_id')->nullable();
-            $table->enum('status', ['create', 'active', 'close', 'complete', 'ready'])->default('create');
+            $table->string('status')->default('create');
             $table->string('theme')->nullable();
             $table->string('title')->nullable();
             $table->text('message')->nullable();
