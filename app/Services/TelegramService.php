@@ -165,8 +165,8 @@ class TelegramService
                     } elseif ($this->text == 'main_page_button') {
                         $this->showMainPage();
                     } else {
-                        $this->appealRepository->updateOrCreateAppeal($this->chat_id, ['message' => $this->text, 'status' => 'ready']);
-                        $this->successAcceptAppeal();
+                        $chat = $this->appealRepository->updateOrCreateAppeal($this->chat_id, ['message' => $this->text, 'status' => 'ready']);
+                        $this->successAcceptAppeal($chat);
                     }
             }
         }
@@ -298,9 +298,9 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $this->backButton(), 'parse_mode' => 'html', 'disable_web_page_preview' => true]);
     }
 
-    public function successAcceptAppeal(): void
+    public function successAcceptAppeal($chat): void
     {
-        $text = $this->textRepository->getOrCreate('success_accept_appeal_text', $this->userRepository->language($this->chat_id));
+        $text = $this->textRepository->successAcceptText($this->userRepository->language($this->chat_id), $chat->id, $chat->updated_at);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();
     }

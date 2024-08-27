@@ -34,4 +34,15 @@ class TelegramTextRepository
         if (!$model) return false;
         return in_array($text, [$model->ru, $model->en, $model->uz]);
     }
+
+    public function successAcceptText($lang, $id, $datetime)
+    {
+        $text = [
+            'uz' => "Rahmat. Sizning murojaat bankka muvaffaqiyatli yuborildi.\nOperatorning javobini kuting.\nMurojaat raqami: $id\nVaqt: $datetime",
+            'ru' => "Rahmat. Sizning murojaat bankka muvaffaqiyatli yuborildi.\nOperatorning javobini kuting.\nMurojaat raqami: $id\nVaqt: $datetime",
+            'en' => "Rahmat. Sizning murojaat bankka muvaffaqiyatli yuborildi.\nOperatorning javobini kuting.\nMurojaat raqami: $id\nVaqt: $datetime"
+        ];
+
+        return $text[$lang];
+    }
 }
