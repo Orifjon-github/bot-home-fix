@@ -102,10 +102,6 @@ class Telegram
         $this->bot_token = env('TELEGRAM_BOT_TOKEN');
         $this->data = $this->getData();
         $this->logService = $logService;
-        $this->proxy = [
-            'url' => '10.8.88.22',
-            'port' => '8080'
-        ];
     }
 
     /// Do requests to Telegram Bot API
