@@ -36,7 +36,7 @@ class TelegramService
 
     public function start(): bool
     {
-        if ($this->text == '/start') {
+        if ($this->text === '/start') {
             $this->handleRegistration();
         } else {
             switch ($this->userRepository->page($this->chat_id)) {
