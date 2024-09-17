@@ -205,20 +205,21 @@ class TelegramService
     {
         $role = $this->userRepository->role($this->chat_id);
         $text = $this->textRepository->getOrCreate('main_page_text', $this->userRepository->language($this->chat_id));
-        $option = [];
+        $textButton_3 = $this->textRepository->getOrCreate('my_works_button', $this->userRepository->language($this->chat_id));
         switch ($role) {
             case 'manager':
-                $textButton_1 = $this->textRepository->getOrCreate('consultation_button', $this->userRepository->language($this->chat_id));
-                $textButton_2 = $this->textRepository->getOrCreate('help_button', $this->userRepository->language($this->chat_id));
-                $textButton_3 = $this->textRepository->getOrCreate('appeals_button', $this->userRepository->language($this->chat_id));
+                $textButton_1 = $this->textRepository->getOrCreate('add_object_button', $this->userRepository->language($this->chat_id));
+                $textButton_2 = $this->textRepository->getOrCreate('all_objects_button', $this->userRepository->language($this->chat_id));
                 $option = [[$this->telegram->buildKeyboardButton($textButton_1)], [$this->telegram->buildKeyboardButton($textButton_2)], [$this->telegram->buildKeyboardButton($textButton_3)]];
                 break;
             case 'employee':
-                $textButton_4 = $this->textRepository->getOrCreate('history_of_appeals_button', $this->userRepository->language($this->chat_id));
-                $option = [[$this->telegram->buildKeyboardButton($textButton_4)]];
+                $textButton_4 = $this->textRepository->getOrCreate('objects', $this->userRepository->language($this->chat_id));
+                $option = [[$this->telegram->buildKeyboardButton($textButton_4)], [$this->telegram->buildKeyboardButton($textButton_3)]];
                 break;
             default:
-                $textWait = $this->textRepository->getOrCreate('main_page_text', $this->userRepository->language($this->chat_id));
+                $textWait = $this->textRepository->getOrCreate('wait_for_role_text', $this->userRepository->language($this->chat_id));
+                $textButton_6 = $this->textRepository->getOrCreate('check_role_button', $this->userRepository->language($this->chat_id));
+                $option = [[$this->telegram->buildKeyboardButton($textButton_6)]];
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $textWait, 'parse_mode' => 'html']);
         }
 
