@@ -17,13 +17,3 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/start', [TelegramBotController::class, 'start']);
 Route::get('/ping', [MainController::class, 'ping']);
-
-Route::controller(MainController::class)
-    ->middleware(['auth', 'elk'])
-    ->group(function () {
-        Route::prefix('chat')->group(function () {
-            Route::get('opens', 'openChats');
-            Route::post('detail/{id}', 'chatDetail');
-            Route::post('admin', 'adminChats');
-        });
-    });

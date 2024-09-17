@@ -42,6 +42,10 @@ class UserRepository
         return $phone ? $this->model->updateOrCreate(['chat_id' => $chat_id], ['chat_id' => $chat_id, 'phone' => $phone]) : $this->model::where('chat_id', $chat_id)->first()->phone;
     }
 
+    public function role($chat_id) {
+        return $this->model::where('chat_id', $chat_id)->first()->role;
+    }
+
     public function delete($chat_id): void
     {
         $this->model->where('chat_id', $chat_id)->update(['status' => 'delete-account']);
