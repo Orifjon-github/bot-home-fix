@@ -5,7 +5,7 @@ namespace App\Services;
 
 use App\Helpers\TelegramHelper;
 use App\Models\AppealType;
-use App\Repositories\AppealRepository;
+use App\Repositories\ObjectRepository;
 use App\Repositories\TelegramTextRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Log;
@@ -17,13 +17,13 @@ class TelegramService
     private Telegram $telegram;
     private UserRepository $userRepository;
     private TelegramTextRepository $textRepository;
-    private AppealRepository $appealRepository;
+    private ObjectRepository $objectRepository;
 
     public function __construct(
         Telegram               $telegram,
         UserRepository         $userRepository,
         TelegramTextRepository $textRepository,
-        AppealRepository       $appealRepository,
+        ObjectRepository       $objectRepository,
     )
     {
         $this->telegram = $telegram;
@@ -31,7 +31,7 @@ class TelegramService
         $this->text = $telegram->Text();
         $this->userRepository = $userRepository;
         $this->textRepository = $textRepository;
-        $this->appealRepository = $appealRepository;
+        $this->objectRepository = $objectRepository;
     }
 
     public function start(): bool
@@ -67,34 +67,11 @@ class TelegramService
                         $this->askCorrectPhone();
                     }
                     break;
-                case TelegramHelper::MAIN_PAGE_STEP:
-                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
-                    switch ($keyword) {
-                        case 'settings_button':
-                            $this->showSettings();
-                            break;
-                        case 'contact_button':
-                            $this->showContact();
-                            break;
-                        case 'help_button':
-                            $this->showHelp();
-                            break;
-                        case 'appeals_button':
-                            $this->showAppeals();
-                            break;
-                        default:
-                            $this->showMainPage();
-                            break;
-                    }
-                    break;
                 case TelegramHelper::SETTINGS_STEP:
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
                     switch ($keyword) {
                         case 'change_language_button':
                             $this->chooseLanguage(true);
-                            break;
-                        case 'delete_account_button':
-                            $this->deleteAccount();
                             break;
                         case 'main_page_button':
                             $this->showMainPage();
@@ -104,17 +81,43 @@ class TelegramService
                             break;
                     }
                     break;
-                case TelegramHelper::DELETE_ACCOUNT_STEP:
+                case TelegramHelper::MAIN_PAGE_STEP:
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
                     switch ($keyword) {
-                        case 'confirm_delete_account_button':
-                            $this->confirmDeleteAccount();
+                        case 'settings_button':
+                            $this->showSettings();
                             break;
-                        case 'cancel_delete_account_button':
-                            $this->cancelDeleteAccount();
+                        case 'add_object_button':
+                            $this->askObjectName();
                             break;
                         default:
-                            $this->deleteAccount();
+                            $this->showMainPage();
+                            break;
+                    }
+                    break;
+                case TelegramHelper::ASK_OBJECT_NAME:
+                    $this->objectRepository->createObject($this->chat_id, $this->text);
+                    $this->askBranchName();
+                    break;
+                case TelegramHelper::ASK_BRANCH_NAME:
+                    $this->objectRepository->createBranch($this->chat_id, $this->text);
+                    $this->askBranchAddress();
+                    break;
+                case TelegramHelper::ASK_BRANCH_ADDRESS:
+                    $this->objectRepository->updateBranch($this->chat_id, $this->text);
+                    $this->confirmObject();
+                    break;
+                case TelegramHelper::CONFIRM_OBJECT:
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
+                    switch ($keyword) {
+                        case 'confirm_object_button':
+                            $this->confirmObjectButton();
+                            break;
+                        case 'cancel_object_button':
+                            $this->cancelObjectButton();
+                            break;
+                        default:
+                            $this->confirmObject();
                             break;
 
                     }
@@ -136,38 +139,6 @@ class TelegramService
                     }
                     $this->successChangeLang();
                     break;
-                case TelegramHelper::APPEALS_STEP:
-                    $lang = $this->userRepository->language($this->chat_id);
-                    $attr = ($lang == 'uz') ? 'name' : "name_$lang";
-                    $appeal = $this->appealRepository->getAppealType($attr, $this->text);
-                    if ($appeal) {
-                        $this->appealRepository->updateOrCreateAppeal($this->chat_id, ['theme' => $appeal->$attr]);
-                        $this->askAppealTitle();
-                    } elseif ($this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id)) == 'main_page_button') {
-                        $this->showMainPage();
-                    } else {
-                        $this->showAppeals();
-                    }
-                    break;
-                case TelegramHelper::ASK_APPEAL_TITLE:
-                    if ($this->text == 'back_button') {
-                        $this->back(TelegramHelper::APPEALS_STEP, 'showAppeals');
-                    } elseif ($this->text == 'main_page_button') {
-                        $this->showMainPage();
-                    } else {
-                        $this->appealRepository->updateOrCreateAppeal($this->chat_id, ['title' => $this->text]);
-                        $this->askAppealDescription();
-                    }
-                    break;
-                case TelegramHelper::ASK_APPEAL_DESCRIPTION:
-                    if ($this->text == 'back_button') {
-                        $this->back(TelegramHelper::APPEALS_STEP, 'askAppealTitle');
-                    } elseif ($this->text == 'main_page_button') {
-                        $this->showMainPage();
-                    } else {
-                        $chat = $this->appealRepository->updateOrCreateAppeal($this->chat_id, ['message' => $this->text, 'status' => 'ready']);
-                        $this->successAcceptAppeal($chat);
-                    }
             }
         }
         return true;
@@ -231,46 +202,54 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
-    public function deleteAccount(): void
+    public function askObjectName(): void
     {
-        $text = $this->textRepository->getOrCreate('confirm_delete_account_text', $this->userRepository->language($this->chat_id));
-        $textConfirm = $this->textRepository->getOrCreate('confirm_delete_account_button', $this->userRepository->language($this->chat_id));
-        $textCancel = $this->textRepository->getOrCreate('cancel_delete_account_button', $this->userRepository->language($this->chat_id));
+        $text = $this->textRepository->getOrCreate('ask_object_name_text', $this->userRepository->language($this->chat_id));
         $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
-        $this->userRepository->page($this->chat_id, TelegramHelper::DELETE_ACCOUNT_STEP);
-        $option = [[$this->telegram->buildKeyboardButton($textCancel), $this->telegram->buildKeyboardButton($textConfirm)], [$this->telegram->buildKeyboardButton($backButton)]];
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_OBJECT_NAME);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+    }
+
+    public function askBranchName(): void
+    {
+        $text = $this->textRepository->getOrCreate('ask_branch_name_text', $this->userRepository->language($this->chat_id));
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_BRANCH_NAME);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+    }
+    public function askBranchAddress(): void
+    {
+        $text = $this->textRepository->getOrCreate('ask_branch_address_text', $this->userRepository->language($this->chat_id));
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_BRANCH_ADDRESS);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+    }
+
+    public function confirmObject(): void
+    {
+        $text = $this->textRepository->getOrCreate('confirm_object_text', $this->userRepository->language($this->chat_id));
+        $textConfirm = $this->textRepository->getOrCreate('confirm_object_button', $this->userRepository->language($this->chat_id));
+        $textCancel = $this->textRepository->getOrCreate('cancel_object_button', $this->userRepository->language($this->chat_id));
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::CONFIRM_OBJECT);
+        $option = [[$this->telegram->buildKeyboardButton($textCancel), $this->telegram->buildKeyboardButton($textConfirm)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
-    public function cancelDeleteAccount(): void
+    public function cancelObjectButton(): void
     {
-        $text = $this->textRepository->getOrCreate('cancel_delete_account_text', $this->userRepository->language($this->chat_id));
+        $this->objectRepository->deleteObject($this->chat_id);
+        $text = $this->textRepository->getOrCreate('success_cancel_object_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();
     }
 
-    public function confirmDeleteAccount(): void
+    public function confirmObjectButton(): void
     {
-        $this->userRepository->delete($this->chat_id);
-        $text = $this->textRepository->getOrCreate('success_delete_account_text', $this->userRepository->language($this->chat_id));
-        $textRegister = $this->textRepository->getOrCreate('register_button', $this->userRepository->language($this->chat_id));
-        $this->userRepository->page($this->chat_id, TelegramHelper::START_STEP);
-        $option = [[$this->telegram->buildKeyboardButton($textRegister)]];
-        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
-    }
-
-    public function showContact(): void
-    {
-        $text = $this->textRepository->getOrCreate('contact_text', $this->userRepository->language($this->chat_id));
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html', 'disable_web_page_preview' => true]);
-    }
-
-    public function showHelp(): void
-    {
-        $text = $this->textRepository->getOrCreate('help_text', $this->userRepository->language($this->chat_id));
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html', 'disable_web_page_preview' => true]);
+        $text = $this->textRepository->getOrCreate('success_confirm_object_text', $this->userRepository->language($this->chat_id));
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+        $this->showMainPage();
     }
 
     public function showAppeals(): void

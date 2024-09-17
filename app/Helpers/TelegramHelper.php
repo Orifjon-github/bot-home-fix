@@ -17,7 +17,10 @@ class TelegramHelper
           ASK_APPEAL_DESCRIPTION = 'ask_sms_type',
           SETTINGS_STEP = 'settings',
           CHANGE_LANG_STEP = 'change_lang',
-          DELETE_ACCOUNT_STEP = 'delete_account',
+          ASK_OBJECT_NAME = 'ask_object_name',
+          ASK_BRANCH_NAME = 'ask_branch_name',
+          ASK_BRANCH_ADDRESS = 'ask_branch_address',
+          CONFIRM_OBJECT = 'confirm_object',
           CHOOSE_LANGUAGE_TEXT = "Muloqot uchun tilni tanlang\n\nВыберите язык для общения\n\nSelect language";
 
     public static function checkPhone($phone): bool|string
