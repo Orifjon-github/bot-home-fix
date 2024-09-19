@@ -312,7 +312,7 @@ class TelegramService
 
     public function showBranches($object_id): void
     {
-        $branches = Branch::where('object_id', $object_id)->get();
+        $branches = Branch::where('objects_id', $object_id)->get();
 
         $text = $this->textRepository->getOrCreate('all_branches_text', $this->userRepository->language($this->chat_id));
         foreach ($branches as $branch) {
