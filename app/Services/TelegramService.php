@@ -137,7 +137,7 @@ class TelegramService
                     $this->askBranchAddress();
                     break;
                 case TelegramHelper::ASK_BRANCH_ADDRESS:
-                    $this->objectRepository->updateBranch($this->chat_id, $this->text);
+                    $this->objectRepository->updateBranch($this->chat_id, $this->text, $this->userRepository->object($this->chat_id));
                     $this->confirmObject($this->userRepository->object($this->chat_id));
                     break;
                 case TelegramHelper::CONFIRM_OBJECT:
@@ -152,7 +152,6 @@ class TelegramService
                         default:
                             $this->confirmObject();
                             break;
-
                     }
                     break;
                 case TelegramHelper::CHANGE_LANG_STEP:
