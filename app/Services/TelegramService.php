@@ -5,6 +5,8 @@ namespace App\Services;
 
 use App\Helpers\TelegramHelper;
 use App\Models\AppealType;
+use App\Models\Branch;
+use App\Models\Objects;
 use App\Repositories\ObjectRepository;
 use App\Repositories\TelegramTextRepository;
 use App\Repositories\UserRepository;
@@ -90,8 +92,39 @@ class TelegramService
                         case 'add_object_button':
                             $this->askObjectName();
                             break;
+                        case 'all_objects_button':
+                            $this->showObjects();
+                            break;
+                        case 'my_works_button':
+                            $this->technicalWork();
+                            break;
                         default:
                             $this->showMainPage();
+                            break;
+                    }
+                    break;
+                case TelegramHelper::ALL_OBJECTS:
+                    if ($this->text === 'main_page_button') {
+                        $this->showObjects();
+                    } else {
+                        $object = Objects::where('name', $this->text)->first();
+                        if (!$object) $this->showObjects();
+                        $this->userRepository->object($this->chat_id, $object->id);
+                        $this->showBranches($object->id);
+                    }
+                    break;
+                case TelegramHelper::ALL_BRANCHES:
+                    switch ($this->text) {
+                        case 'main_page_button':
+                            $this->showMainPage();
+                            break;
+                        case 'add_object_button':
+                            $this->askBranchName();
+                            break;
+                        default:
+                            $branch = Branch::where('name', $this->text)->first();
+                            if (!$branch) $this->showBranches($this->userRepository->object($this->chat_id));
+                            $this->technicalWork();
                             break;
                     }
                     break;
@@ -100,7 +133,7 @@ class TelegramService
                     $this->askBranchName();
                     break;
                 case TelegramHelper::ASK_BRANCH_NAME:
-                    $this->objectRepository->createBranch($this->chat_id, $this->text);
+                    $this->objectRepository->createBranch($this->chat_id, $this->text, $this->userRepository->object($this->chat_id));
                     $this->askBranchAddress();
                     break;
                 case TelegramHelper::ASK_BRANCH_ADDRESS:
@@ -174,6 +207,7 @@ class TelegramService
 
     public function showMainPage(): void
     {
+        $this->userRepository->object($this->chat_id, null, true);
         $role = $this->userRepository->role($this->chat_id);
         $text = $this->textRepository->getOrCreate('main_page_text', $this->userRepository->language($this->chat_id));
         $textButton_3 = $this->textRepository->getOrCreate('my_works_button', $this->userRepository->language($this->chat_id));
@@ -217,6 +251,7 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_BRANCH_NAME);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
+
     public function askBranchAddress(): void
     {
         $text = $this->textRepository->getOrCreate('ask_branch_address_text', $this->userRepository->language($this->chat_id));
@@ -252,15 +287,12 @@ class TelegramService
         $this->showMainPage();
     }
 
-    public function showAppeals(): void
+    public function showObjects(): void
     {
-        $text = $this->textRepository->getOrCreate('choose_appeals_text', $this->userRepository->language($this->chat_id));
-        $appeals = AppealType::all();
-        $option = [];
-        $temp = [];
-        $lang = $this->userRepository->language($this->chat_id);
-        foreach ($appeals as $appeal) {
-            $buttonText = TelegramHelper::getValue($appeal, $lang);
+        $text = $this->textRepository->getOrCreate('all_objects_text', $this->userRepository->language($this->chat_id));
+        $objects = Objects::all();
+        foreach ($objects as $object) {
+            $buttonText = $object->name;
             $temp[] = $this->telegram->buildKeyboardButton($buttonText);
             if (count($temp) === 3) {
                 $option[] = $temp;
@@ -271,8 +303,34 @@ class TelegramService
         if (!empty($temp)) {
             $option[] = $temp;
         }
-        $this->userRepository->page($this->chat_id, TelegramHelper::APPEALS_STEP);
+        $this->userRepository->page($this->chat_id, TelegramHelper::ALL_OBJECTS);
         $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
+        $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
+        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+    }
+
+    public function showBranches($object_id): void
+    {
+        $branches = Branch::where('object_id', $object_id)->get();
+
+        $text = $this->textRepository->getOrCreate('all_branches_text', $this->userRepository->language($this->chat_id));
+        foreach ($branches as $branch) {
+            $buttonText = $branch->name;
+            $temp[] = $this->telegram->buildKeyboardButton($buttonText);
+            if (count($temp) === 3) {
+                $option[] = $temp;
+                $temp = [];
+            }
+        }
+
+        if (!empty($temp)) {
+            $option[] = $temp;
+        }
+        $this->userRepository->page($this->chat_id, TelegramHelper::ALL_BRANCHES);
+        $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
+        $textButtonAdd = $this->textRepository->getOrCreate('add_branch_button', $this->userRepository->language($this->chat_id));
+        array_unshift($option, [$this->telegram->buildKeyboardButton($textButtonAdd)]);
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);

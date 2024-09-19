@@ -20,6 +20,7 @@ return new class extends Migration
             $table->enum('language', ['ru', 'en', 'uz'])->nullable();
             $table->string('step')->default('start');
             $table->enum('status', ['active', 'delete-account'])->default('active');
+            $table->string('object_id')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

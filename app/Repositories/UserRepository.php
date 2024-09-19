@@ -46,6 +46,13 @@ class UserRepository
         return $this->model::where('chat_id', $chat_id)->first()->role;
     }
 
+    public function object($chat_id, $object_id=null, $set_null = false) {
+        if ($set_null) {
+            return $this->model->where('chat_id', $chat_id)->update(['object_id' => null]);
+        }
+        return $object_id ? $this->model->updateOrCreate(['chat_id' => $chat_id], ['chat_id' => $chat_id, 'object_id' => $object_id]) : $this->model::where('chat_id', $chat_id)->first()->object_id;
+    }
+
     public function delete($chat_id): void
     {
         $this->model->where('chat_id', $chat_id)->update(['status' => 'delete-account']);

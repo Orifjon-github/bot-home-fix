@@ -28,22 +28,31 @@ class ObjectRepository
         $user->objects()->create(['name' => $name]);
         return true;
     }
-    public function createBranch($chat_id, $name): bool
+    public function createBranch($chat_id, $name, $object_id=null): bool
     {
         $user = User::where('chat_id', $chat_id)->first();
-        $object = $user->objects()
-        ->latest()
-        ->first();
+        if ($object_id) {
+            $object = $this->model->find($object_id);
+        } else {
+            $object = $user->objects()
+                ->latest()
+                ->first();
+        }
+
         $object->branches()->create(['name' => $name]);
         return true;
     }
 
-    public function updateBranch($chat_id, $address): bool
+    public function updateBranch($chat_id, $address, $object_id=null): bool
     {
         $user = User::where('chat_id', $chat_id)->first();
-        $object = $user->objects()
-            ->latest()
-            ->first();
+        if ($object_id) {
+            $object = $this->model->find($object_id);
+        } else {
+            $object = $user->objects()
+                ->latest()
+                ->first();
+        }
         $object->branches()->update(['address' => $address]);
         return true;
     }
