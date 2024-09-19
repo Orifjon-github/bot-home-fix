@@ -22,6 +22,12 @@ class ObjectRepository
         return $user->objects()->latest()->first();
     }
 
+    public function getLatestBranch($object_id)
+    {
+        $object = $this->model->find($object_id);
+        return $object->branches()->latest()->first();
+    }
+
     public function createObject($chat_id, $name): bool
     {
         $user = User::where('chat_id', $chat_id)->first();

@@ -105,7 +105,7 @@ class TelegramService
                     break;
                 case TelegramHelper::ALL_OBJECTS:
                     if ($this->text === 'main_page_button') {
-                        $this->showObjects();
+                        $this->showMainPage();
                     } else {
                         $object = Objects::where('name', $this->text)->first();
                         if (!$object) $this->showObjects();
@@ -262,7 +262,13 @@ class TelegramService
 
     public function confirmObject(): void
     {
-        $text = $this->textRepository->getOrCreate('confirm_object_text', $this->userRepository->language($this->chat_id));
+        $object = $this->objectRepository->getLatestObject($this->chat_id);
+        if ($object) {
+            $branch = $this->objectRepository->getLatestBranch($object->id);
+            $text = "Object name: $object->name\n\nFilial name: $branch->name\nFilial address: $branch->address\n\n Kiritgan malumotlaringiz Barcha xodimlarga yuboriladi!! Obyekt va Filialni tasdiqlaysizmi?";
+        } else {
+            $text = $this->textRepository->getOrCreate('confirm_object_text', $this->userRepository->language($this->chat_id));
+        }
         $textConfirm = $this->textRepository->getOrCreate('confirm_object_button', $this->userRepository->language($this->chat_id));
         $textCancel = $this->textRepository->getOrCreate('cancel_object_button', $this->userRepository->language($this->chat_id));
         $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
