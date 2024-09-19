@@ -138,7 +138,7 @@ class TelegramService
                     break;
                 case TelegramHelper::ASK_BRANCH_ADDRESS:
                     $this->objectRepository->updateBranch($this->chat_id, $this->text);
-                    $this->confirmObject();
+                    $this->confirmObject($this->userRepository->object($this->chat_id));
                     break;
                 case TelegramHelper::CONFIRM_OBJECT:
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
@@ -260,9 +260,13 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
 
-    public function confirmObject(): void
+    public function confirmObject($object_id=null): void
     {
-        $object = $this->objectRepository->getLatestObject($this->chat_id);
+        if ($object_id) {
+            $object = Objects::find($this->userRepository->object($this->chat_id));
+        } else {
+            $object = $this->objectRepository->getLatestObject($this->chat_id);
+        }
         if ($object) {
             $branch = $this->objectRepository->getLatestBranch($object->id);
             $text = "Object name: $object->name\n\nFilial name: $branch->name\nFilial address: $branch->address\n\n Kiritgan malumotlaringiz Barcha xodimlarga yuboriladi!! Obyekt va Filialni tasdiqlaysizmi?";
