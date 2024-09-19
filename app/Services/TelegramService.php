@@ -231,7 +231,7 @@ class TelegramService
         $option[] = [$this->telegram->buildKeyboardButton($textButton_5)];
         $this->userRepository->page($this->chat_id, TelegramHelper::MAIN_PAGE_STEP);
 
-        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        $keyboard = $this->telegram->buildKeyBoard($option, true, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
@@ -268,7 +268,7 @@ class TelegramService
         }
         if ($object) {
             $branch = $this->objectRepository->getLatestBranch($object->id);
-            $text = "Object name: $object->name\n\nFilial name: $branch->name\nFilial address: $branch->address\n\n Kiritgan malumotlaringiz Barcha xodimlarga yuboriladi!! Obyekt va Filialni tasdiqlaysizmi?";
+            $text = "Object name: $object->name\n\nFilial name: $branch->name\nFilial address: $branch->address\n\nKiritgan malumotlaringiz Barcha xodimlarga yuboriladi!! Obyekt va Filialni tasdiqlaysizmi?";
         } else {
             $text = $this->textRepository->getOrCreate('confirm_object_text', $this->userRepository->language($this->chat_id));
         }
@@ -315,7 +315,7 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ALL_OBJECTS);
         $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
-        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        $keyboard = $this->telegram->buildKeyBoard($option, true, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
