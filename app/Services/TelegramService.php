@@ -7,6 +7,7 @@ use App\Helpers\TelegramHelper;
 use App\Models\AppealType;
 use App\Models\Branch;
 use App\Models\Objects;
+use App\Models\User;
 use App\Repositories\ObjectRepository;
 use App\Repositories\TelegramTextRepository;
 use App\Repositories\UserRepository;
@@ -144,7 +145,7 @@ class TelegramService
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
                     switch ($keyword) {
                         case 'confirm_object_button':
-                            $this->confirmObjectButton();
+                            $this->confirmObjectButton($this->userRepository->object($this->chat_id));
                             break;
                         case 'cancel_object_button':
                             $this->cancelObjectButton();
@@ -289,8 +290,15 @@ class TelegramService
         $this->showMainPage();
     }
 
-    public function confirmObjectButton(): void
+    public function confirmObjectButton($object_id=null): void
     {
+        if ($object_id) {
+            $object = (new Objects)->find($object_id);
+        } else {
+            $object = $this->objectRepository->getLatestObject($this->chat_id);
+        }
+        $branch = $this->objectRepository->getLatestBranch($object->id);
+        $this->sendAll($branch->id, (bool)$object_id);
         $text = $this->textRepository->getOrCreate('success_confirm_object_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();
@@ -420,6 +428,18 @@ class TelegramService
             $this->alreadyRegistered();
         } else {
             $this->chooseLanguage();
+        }
+    }
+
+    private function sendAll($branch_id, $is_object_old): void
+    {
+        $users = User::where('role', 'employee')->where('status', 'active')->get();
+        $branch = Branch::find($branch_id);
+        $object = (new Objects)->find($branch->objects_id);
+        foreach ($users as $user) {
+            $prefix = $is_object_old ? "<strong>New Filial for Existing Object</strong>" : "<strong>New Object and Filial</strong>";
+            $text = "$prefix\n\nObject name: $object->name\n\nFilial name: $branch->name\nFilial address: $branch->address";
+            $this->telegram->sendMessage(['chat_id' => $user->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         }
     }
 }
