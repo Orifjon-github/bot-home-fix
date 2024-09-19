@@ -218,7 +218,7 @@ class TelegramService
                 $option = [[$this->telegram->buildKeyboardButton($textButton_1)], [$this->telegram->buildKeyboardButton($textButton_2)], [$this->telegram->buildKeyboardButton($textButton_3)]];
                 break;
             case 'employee':
-                $textButton_4 = $this->textRepository->getOrCreate('objects', $this->userRepository->language($this->chat_id));
+                $textButton_4 = $this->textRepository->getOrCreate('all_objects_button', $this->userRepository->language($this->chat_id));
                 $option = [[$this->telegram->buildKeyboardButton($textButton_4)], [$this->telegram->buildKeyboardButton($textButton_3)]];
                 break;
             default:
@@ -349,7 +349,7 @@ class TelegramService
         $textButtonAdd = $this->textRepository->getOrCreate('add_branch_button', $this->userRepository->language($this->chat_id));
         array_unshift($option, [$this->telegram->buildKeyboardButton($textButtonAdd)]);
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
-        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        $keyboard = $this->telegram->buildKeyBoard($option, true, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
