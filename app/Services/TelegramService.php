@@ -118,7 +118,7 @@ class TelegramService
                         case 'main_page_button':
                             $this->showMainPage();
                             break;
-                        case 'add_object_button':
+                        case 'add_branch_button':
                             $this->askBranchName();
                             break;
                         default:
