@@ -13,6 +13,7 @@ use App\Repositories\ObjectRepository;
 use App\Repositories\TelegramTextRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class TelegramService
 {
@@ -218,9 +219,19 @@ class TelegramService
                     $this->askTaskImage();
                     break;
                 case TelegramHelper::ASK_TASK_IMAGE:
-//                    $this->objectRepository->updateTask(['description' => $this->text], $this->userRepository->task($this->chat_id));
-                    // save image
-                    $this->confirmTask();
+                    $photoArray = $this->telegram->getUpdateType();
+                    if ($photoArray) {
+                        $photoIds = array_map(fn($photo) => $photo['file_id'], $photoArray);
+                        foreach ($photoIds as $photoId) {
+                            $file = $this->telegram->getFile($photoId);
+                            $filePath = $file['result']['file_path'] ?? null;
+                            if ($filePath) {
+                                $this->saveImage($filePath);
+                                $this->confirmTask();
+                            }
+                        }
+                    }
+                    $this->askTaskImage();
                     break;
                 case TelegramHelper::CONFIRM_OBJECT:
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
@@ -706,5 +717,18 @@ class TelegramService
             $text = "$prefix\n\nObject name: $object->name\n\nFilial name: $branch->name\nFilial address: $branch->address";
             $this->telegram->sendMessage(['chat_id' => $user->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         }
+    }
+
+    private function saveImage($filePath)
+    {
+        $token = env('TELEGRAM_BOT_TOKEN');
+        $url = "https://api.telegram.org/file/bot{$token}/{$filePath}";
+
+        $imageContent = file_get_contents($url);
+
+        $path = Storage::putFile('public/task-images', $imageContent);
+        $path = str_replace('public/', '/storage/', $path);
+        $task = (new Task)->find($this->userRepository->task($this->chat_id));
+        $task->images()->create(['image' => $path]);
     }
 }

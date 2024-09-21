@@ -20,4 +20,8 @@ class Task extends Model
     {
         return $this->hasMany(Material::class);
     }
+    public function images(): HasMany
+    {
+        return $this->hasMany(TaskImage::class);
+    }
 }

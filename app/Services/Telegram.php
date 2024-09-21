@@ -1688,13 +1688,6 @@ class Telegram
         $this->data = $this->updates['result'][$update];
     }
 
-    /// Return current update type
-
-    /**
-     * Return current update type `False` on failure.
-     *
-     * @return bool|string
-     */
     public function getUpdateType()
     {
         $update = $this->data;
@@ -1711,7 +1704,7 @@ class Telegram
             return self::MESSAGE;
         }
         if (isset($update['message']['photo'])) {
-            return self::PHOTO;
+            return $update['message']['photo'];
         }
         if (isset($update['message']['video'])) {
             return self::VIDEO;
