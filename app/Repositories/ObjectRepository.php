@@ -55,7 +55,7 @@ class ObjectRepository
         return true;
     }
 
-    public function createTask($chat_id, $name, $branch_id=null): bool
+    public function createTask($chat_id, $name, $branch_id=null)
     {
         $user = User::where('chat_id', $chat_id)->first();
         if ($branch_id) {
