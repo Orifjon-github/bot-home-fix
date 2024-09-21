@@ -496,7 +496,7 @@ class TelegramService
                 $temp = [];
             }
         }
-
+        $option = [];
         if (!empty($temp)) {
             $option[] = $temp;
         }
