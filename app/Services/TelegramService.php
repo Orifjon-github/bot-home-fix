@@ -198,19 +198,19 @@ class TelegramService
                     $this->askTaskDescription();
                     break;
                 case TelegramHelper::ASK_MATERIAL_QUANTITY_TYPE:
-                    $this->objectRepository->updateTask(['quantity_type' => $this->text], $this->userRepository->material($this->chat_id));
+                    $this->objectRepository->updateMaterial(['quantity_type' => $this->text], $this->userRepository->material($this->chat_id));
                     $this->askMaterialQuantity();
                     break;
                 case TelegramHelper::ASK_MATERIAL_QUANTITY:
-                    $this->objectRepository->updateTask(['quantity' => $this->text], $this->userRepository->material($this->chat_id));
+                    $this->objectRepository->updateMaterial(['quantity' => $this->text], $this->userRepository->material($this->chat_id));
                     $this->askMaterialPriceForQuantityType();
                     break;
                 case TelegramHelper::ASK_MATERIAL_PRICE_FOR_TYPE:
-                    $this->objectRepository->updateTask(['price_for_type' => $this->text], $this->userRepository->material($this->chat_id));
+                    $this->objectRepository->updateMaterial(['price_for_type' => $this->text], $this->userRepository->material($this->chat_id));
                     $this->askMaterialPriceForWork();
                     break;
                 case TelegramHelper::ASK_MATERIAL_PRICE_FOR_WORK:
-                    $this->objectRepository->updateTask(['price_for_work' => $this->text], $this->userRepository->material($this->chat_id));
+                    $this->objectRepository->updateMaterial(['price_for_work' => $this->text], $this->userRepository->material($this->chat_id));
                     $this->confirmMaterial();
                     break;
                 case TelegramHelper::ASK_TASK_DESCRIPTION:
