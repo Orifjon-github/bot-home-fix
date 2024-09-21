@@ -724,11 +724,22 @@ class TelegramService
         $token = env('TELEGRAM_BOT_TOKEN');
         $url = "https://api.telegram.org/file/bot{$token}/{$filePath}";
 
+        // Rasm kontentini olish
         $imageContent = file_get_contents($url);
 
-        $path = Storage::putFile('public/task-images', $imageContent);
-        $path = str_replace('public/', '/storage/', $path);
+        // Rasmni saqlash
+        $fileName = basename($filePath); // Telegramdan olingan fayl nomi
+        $storagePath = "task-images/{$fileName}"; // Saqlanadigan yo'l
+
+        // Rasmni saqlash
+        Storage::disk('public')->put($storagePath, $imageContent);
+
+        // Fayl yo'lini o'zgartirish
+        $path = str_replace('public/', '/storage/', $storagePath);
+
+        // Task va rasmni bazaga saqlash
         $task = (new Task)->find($this->userRepository->task($this->chat_id));
         $task->images()->create(['image' => $path]);
     }
+
 }
