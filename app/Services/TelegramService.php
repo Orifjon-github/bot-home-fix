@@ -161,7 +161,7 @@ class TelegramService
                             $this->showMainPage();
                             break;
                         case 'add_material_button':
-                            $this->askTaskName();
+                            $this->askMaterialName();
                             break;
                         default:
                             $material = Material::where('name', $this->text)->first();
@@ -191,7 +191,7 @@ class TelegramService
                 case TelegramHelper::ASK_MATERIAL_NAME:
                     $material = $this->objectRepository->createMaterial($this->chat_id, $this->text, $this->userRepository->task($this->chat_id));
                     $this->userRepository->material($this->chat_id, $material->id);
-                    $this->askMaterialPriceForQuantityType();
+                    $this->askMaterialQuantityType();
                     break;
                 case TelegramHelper::ASK_TASK_QUANTITY:
                     $this->objectRepository->updateTask(['quantity' => $this->text], $this->userRepository->task($this->chat_id));
