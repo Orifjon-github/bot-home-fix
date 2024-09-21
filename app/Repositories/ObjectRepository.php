@@ -3,17 +3,23 @@
 namespace App\Repositories;
 
 use App\Models\Branch;
+use App\Models\Material;
 use App\Models\Objects;
+use App\Models\Task;
 use App\Models\User;
 
 class ObjectRepository
 {
     private Objects $model;
     private Branch $branch;
-    public function __construct(Objects $model, Branch $branch)
+    private Task $task;
+    private Material $material;
+    public function __construct(Objects $model, Branch $branch, Task $task, Material $material)
     {
         $this->model = $model;
         $this->branch = $branch;
+        $this->task = $task;
+        $this->material = $material;
     }
 
     public function getLatestObject($chat_id)
@@ -49,6 +55,23 @@ class ObjectRepository
         return true;
     }
 
+    public function createTask($chat_id, $name, $branch_id=null): bool
+    {
+        $user = User::where('chat_id', $chat_id)->first();
+        if ($branch_id) {
+            $branch = $this->branch->find($branch_id);
+        } else {
+            $branch = $user->objects()
+                ->latest()
+                ->first()
+                ->branches()
+                ->latest()
+                ->first();
+        }
+
+        return $branch->tasks()->create(['name' => $name]);
+    }
+
     public function updateBranch($chat_id, $address, $object_id=null): bool
     {
         $user = User::where('chat_id', $chat_id)->first();
@@ -60,6 +83,13 @@ class ObjectRepository
                 ->first();
         }
         $object->branches()->update(['address' => $address]);
+        return true;
+    }
+
+    public function updateTask($data, $task_id): bool
+    {
+        $task = $this->task->find($task_id);
+        $task->update($data);
         return true;
     }
 

@@ -4,9 +4,10 @@ namespace App\Services;
 
 
 use App\Helpers\TelegramHelper;
-use App\Models\AppealType;
 use App\Models\Branch;
+use App\Models\Material;
 use App\Models\Objects;
+use App\Models\Task;
 use App\Models\User;
 use App\Repositories\ObjectRepository;
 use App\Repositories\TelegramTextRepository;
@@ -125,7 +126,32 @@ class TelegramService
                         default:
                             $branch = Branch::where('name', $this->text)->first();
                             if (!$branch) $this->showBranches($this->userRepository->object($this->chat_id));
-                            $this->technicalWork();
+                            $this->userRepository->branch($this->chat_id, $branch->id);
+                            if ($this->userRepository->role($this->chat_id) == 'manager') {
+                                $this->technicalWork();
+                            } else {
+                                $this->showTasks($branch->id);
+                            }
+                            break;
+                    }
+                    break;
+                case TelegramHelper::ALL_TASKS:
+                    switch ($this->text) {
+                        case 'main_page_button':
+                            $this->showMainPage();
+                            break;
+                        case 'add_task_button':
+                            $this->askTaskName();
+                            break;
+                        default:
+                            $task = Task::where('name', $this->text)->first();
+                            if (!$task) $this->showTasks($this->userRepository->branch($this->chat_id));
+                            $this->userRepository->task($this->chat_id, $task->id);
+                            if ($this->userRepository->role($this->chat_id) == 'manager') {
+                                $this->technicalWork();
+                            } else {
+                                $this->showMaterials($task->id); // show materials
+                            }
                             break;
                     }
                     break;
@@ -141,6 +167,24 @@ class TelegramService
                     $this->objectRepository->updateBranch($this->chat_id, $this->text, $this->userRepository->object($this->chat_id));
                     $this->confirmObject($this->userRepository->object($this->chat_id));
                     break;
+                case TelegramHelper::ASK_TASK_NAME:
+                    $task = $this->objectRepository->createTask($this->chat_id, $this->text, $this->userRepository->branch($this->chat_id));
+                    $this->userRepository->task($this->chat_id, $task->id);
+                    $this->askTaskQuantity();
+                    break;
+                case TelegramHelper::ASK_TASK_QUANTITY:
+                    $this->objectRepository->updateTask(['quantity' => $this->text], $this->userRepository->task($this->chat_id));
+                    $this->askTaskDescription();
+                    break;
+                case TelegramHelper::ASK_TASK_DESCRIPTION:
+                    $this->objectRepository->updateTask(['description' => $this->text], $this->userRepository->task($this->chat_id));
+                    $this->askTaskImage();
+                    break;
+                case TelegramHelper::ASK_TASK_IMAGE:
+//                    $this->objectRepository->updateTask(['description' => $this->text], $this->userRepository->task($this->chat_id));
+                    // save image
+                    $this->confirmTask();
+                    break;
                 case TelegramHelper::CONFIRM_OBJECT:
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
                     switch ($keyword) {
@@ -152,6 +196,20 @@ class TelegramService
                             break;
                         default:
                             $this->confirmObject();
+                            break;
+                    }
+                    break;
+                case TelegramHelper::CONFIRM_TASK:
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
+                    switch ($keyword) {
+                        case 'confirm_task_button':
+                            $this->confirmTaskButton();
+                            break;
+                        case 'cancel_task_button':
+                            $this->cancelTaskButton();
+                            break;
+                        default:
+                            $this->confirmTask();
                             break;
                     }
                     break;
@@ -251,6 +309,48 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_BRANCH_NAME);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
+    public function askTaskName(): void
+    {
+        $text = $this->textRepository->getOrCreate('ask_task_name_text', $this->userRepository->language($this->chat_id));
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_NAME);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+    }
+    public function askTaskQuantity(): void
+    {
+        $text = $this->textRepository->getOrCreate('ask_task_quantity_text', $this->userRepository->language($this->chat_id));
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_QUANTITY);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+    }
+    public function askTaskDescription(): void
+    {
+        $text = $this->textRepository->getOrCreate('ask_task_description_text', $this->userRepository->language($this->chat_id));
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_DESCRIPTION);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+    }
+    public function askTaskImage(): void
+    {
+        $text = $this->textRepository->getOrCreate('ask_task_image_text', $this->userRepository->language($this->chat_id));
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_IMAGE);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+    }
+    public function askMaterialName(): void
+    {
+        $text = $this->textRepository->getOrCreate('ask_material_name_text', $this->userRepository->language($this->chat_id));
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_NAME);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+    }
+    public function askMaterialQuantityType(): void
+    {
+        $text = $this->textRepository->getOrCreate('ask_material_quantity_type_text', $this->userRepository->language($this->chat_id));
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_NAME);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+    }
 
     public function askBranchAddress(): void
     {
@@ -263,7 +363,7 @@ class TelegramService
     public function confirmObject($object_id=null): void
     {
         if ($object_id) {
-            $object = Objects::find($this->userRepository->object($this->chat_id));
+            $object = (new Objects)->find($this->userRepository->object($this->chat_id));
         } else {
             $object = $this->objectRepository->getLatestObject($this->chat_id);
         }
@@ -281,11 +381,33 @@ class TelegramService
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
+    public function confirmTask(): void
+    {
+        $task_id = $this->userRepository->task($this->chat_id);
+        $task = (new Task)->find($task_id);
+        $text = "Task name: $task->name\n\nTask Quantity: $task->quantity\n\nTask Description: $task->description";
+        $textConfirm = $this->textRepository->getOrCreate('confirm_task_button', $this->userRepository->language($this->chat_id));
+        $textCancel = $this->textRepository->getOrCreate('cancel_task_button', $this->userRepository->language($this->chat_id));
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::CONFIRM_TASK);
+        $option = [[$this->telegram->buildKeyboardButton($textCancel), $this->telegram->buildKeyboardButton($textConfirm)]];
+        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+    }
 
     public function cancelObjectButton(): void
     {
         $this->objectRepository->deleteObject($this->chat_id);
         $text = $this->textRepository->getOrCreate('success_cancel_object_text', $this->userRepository->language($this->chat_id));
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+        $this->showMainPage();
+    }
+    public function cancelTaskButton(): void
+    {
+        $task_id = $this->userRepository->task($this->chat_id);
+        $task = (new Task)->find($task_id);
+        $task->delete();
+        $text = $this->textRepository->getOrCreate('success_cancel_task_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();
     }
@@ -300,6 +422,12 @@ class TelegramService
         $branch = $this->objectRepository->getLatestBranch($object->id);
         $this->sendAll($branch->id, (bool)$object_id);
         $text = $this->textRepository->getOrCreate('success_confirm_object_text', $this->userRepository->language($this->chat_id));
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+        $this->showMainPage();
+    }
+    public function confirmTaskButton(): void
+    {
+        $text = $this->textRepository->getOrCreate('success_confirm_task_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();
     }
@@ -353,25 +481,56 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
-    public function askAppealTitle(): void
+    public function showTasks($branch_id): void
     {
-        $text = $this->textRepository->getOrCreate('ask_appeal_title_text', $this->userRepository->language($this->chat_id));
-        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_APPEAL_TITLE);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $this->backButton(), 'parse_mode' => 'html', 'disable_web_page_preview' => true]);
+        $tasks = Task::where('branch_id', $branch_id)->get();
+
+        $text = $this->textRepository->getOrCreate('all_tasks_text', $this->userRepository->language($this->chat_id));
+        foreach ($tasks as $task) {
+            $buttonText = $task->name;
+            $temp[] = $this->telegram->buildKeyboardButton($buttonText);
+            if (count($temp) === 3) {
+                $option[] = $temp;
+                $temp = [];
+            }
+        }
+
+        if (!empty($temp)) {
+            $option[] = $temp;
+        }
+        $this->userRepository->page($this->chat_id, TelegramHelper::ALL_TASKS);
+        $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
+        $textButtonAdd = $this->textRepository->getOrCreate('add_task_button', $this->userRepository->language($this->chat_id));
+        array_unshift($option, [$this->telegram->buildKeyboardButton($textButtonAdd)]);
+        $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
+        $keyboard = $this->telegram->buildKeyBoard($option, true, true);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
-    public function askAppealDescription(): void
+    public function showMaterials($task_id): void
     {
-        $text = $this->textRepository->getOrCreate('ask_appeal_description_text', $this->userRepository->language($this->chat_id));
-        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_APPEAL_DESCRIPTION);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $this->backButton(), 'parse_mode' => 'html', 'disable_web_page_preview' => true]);
-    }
+        $materials = Material::where('task_id', $task_id)->get();
 
-    public function successAcceptAppeal($chat): void
-    {
-        $text = $this->textRepository->successAcceptText($this->userRepository->language($this->chat_id), $chat->id, $chat->updated_at);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
-        $this->showMainPage();
+        $text = $this->textRepository->getOrCreate('all_tasks_text', $this->userRepository->language($this->chat_id));
+        foreach ($materials as $material) {
+            $buttonText = $material->name;
+            $temp[] = $this->telegram->buildKeyboardButton($buttonText);
+            if (count($temp) === 3) {
+                $option[] = $temp;
+                $temp = [];
+            }
+        }
+
+        if (!empty($temp)) {
+            $option[] = $temp;
+        }
+        $this->userRepository->page($this->chat_id, TelegramHelper::ALL_TASKS);
+        $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
+        $textButtonAdd = $this->textRepository->getOrCreate('add_task_button', $this->userRepository->language($this->chat_id));
+        array_unshift($option, [$this->telegram->buildKeyboardButton($textButtonAdd)]);
+        $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
+        $keyboard = $this->telegram->buildKeyBoard($option, true, true);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
     public function showSettings(): void

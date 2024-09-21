@@ -7,16 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @method static where(string $string, $object_id)
- * @method static find($branch_id)
+ * @method static where(string $string, mixed $text)
+ * @method find(mixed $task_id)
  */
-class Branch extends Model
+class Task extends Model
 {
     use HasFactory;
+
     protected $guarded = [];
 
-    public function tasks(): HasMany
+    public function materials(): HasMany
     {
-        return $this->hasMany(Task::class);
+        return $this->hasMany(Material::class);
     }
 }
