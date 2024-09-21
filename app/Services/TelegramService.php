@@ -542,7 +542,7 @@ class TelegramService
         foreach ($objects as $object) {
             $buttonText = $object->name;
             $temp[] = $this->telegram->buildKeyboardButton($buttonText);
-            if ($this->count($temp) === 3) {
+            if (count($temp) === 3) {
                 $option[] = $temp;
                 $temp = [];
             }
