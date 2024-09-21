@@ -227,11 +227,12 @@ class TelegramService
                             $filePath = $file['result']['file_path'] ?? null;
                             if ($filePath) {
                                 $this->saveImage($filePath);
-                                $this->confirmTask();
                             }
                         }
+                        $this->confirmTask();
+                    }else {
+                        $this->askTaskImage();
                     }
-                    $this->askTaskImage();
                     break;
                 case TelegramHelper::CONFIRM_OBJECT:
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
