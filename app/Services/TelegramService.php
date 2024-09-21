@@ -475,7 +475,7 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ALL_BRANCHES);
         $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
         $textButtonAdd = $this->textRepository->getOrCreate('add_branch_button', $this->userRepository->language($this->chat_id));
-        if ($this->userRepository->role($this->chat_id)) {
+        if ($this->userRepository->role($this->chat_id) == 'manager') {
             array_unshift($option, [$this->telegram->buildKeyboardButton($textButtonAdd)]);
         }
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
