@@ -15,6 +15,7 @@ class TelegramHelper
           ALL_OBJECTS = 'all_objects',
           ALL_BRANCHES = 'all_branches',
           ALL_TASKS = 'all_tasks',
+          ALL_MATERIALS = 'all_materials',
           SETTINGS_STEP = 'settings',
           CHANGE_LANG_STEP = 'change_lang',
           ASK_OBJECT_NAME = 'ask_object_name',
@@ -28,10 +29,10 @@ class TelegramHelper
           ASK_MATERIAL_QUANTITY_TYPE = 'ask_material_quantity_type',
           ASK_MATERIAL_QUANTITY = 'ask_material_quantity',
           ASK_MATERIAL_PRICE_FOR_TYPE = 'ask_material_price_for_type',
-          ASK_MATERIAL_PRICE = 'ask_material_price',
           ASK_MATERIAL_PRICE_FOR_WORK = 'ask_material_price_for_work',
           CONFIRM_OBJECT = 'confirm_object',
           CONFIRM_TASK = 'confirm_task',
+          CONFIRM_MATERIAL = 'confirm_material',
           CHOOSE_LANGUAGE_TEXT = "Muloqot uchun tilni tanlang\n\nВыберите язык для общения\n\nSelect language";
 
     public static function checkPhone($phone): bool|string

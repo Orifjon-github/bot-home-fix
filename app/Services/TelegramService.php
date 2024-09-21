@@ -155,6 +155,22 @@ class TelegramService
                             break;
                     }
                     break;
+                case TelegramHelper::ALL_MATERIALS:
+                    switch ($this->text) {
+                        case 'main_page_button':
+                            $this->showMainPage();
+                            break;
+                        case 'add_material_button':
+                            $this->askTaskName();
+                            break;
+                        default:
+                            $material = Material::where('name', $this->text)->first();
+                            if (!$material) $this->showMaterials($this->userRepository->task($this->chat_id));
+                            $this->userRepository->material($this->chat_id, $material->id);
+                            $this->technicalWork();
+                            break;
+                    }
+                    break;
                 case TelegramHelper::ASK_OBJECT_NAME:
                     $this->objectRepository->createObject($this->chat_id, $this->text);
                     $this->askBranchName();
@@ -172,9 +188,30 @@ class TelegramService
                     $this->userRepository->task($this->chat_id, $task->id);
                     $this->askTaskQuantity();
                     break;
+                case TelegramHelper::ASK_MATERIAL_NAME:
+                    $material = $this->objectRepository->createMaterial($this->chat_id, $this->text, $this->userRepository->task($this->chat_id));
+                    $this->userRepository->material($this->chat_id, $material->id);
+                    $this->askMaterialPriceForQuantityType();
+                    break;
                 case TelegramHelper::ASK_TASK_QUANTITY:
                     $this->objectRepository->updateTask(['quantity' => $this->text], $this->userRepository->task($this->chat_id));
                     $this->askTaskDescription();
+                    break;
+                case TelegramHelper::ASK_MATERIAL_QUANTITY_TYPE:
+                    $this->objectRepository->updateTask(['quantity_type' => $this->text], $this->userRepository->material($this->chat_id));
+                    $this->askMaterialQuantity();
+                    break;
+                case TelegramHelper::ASK_MATERIAL_QUANTITY:
+                    $this->objectRepository->updateTask(['quantity' => $this->text], $this->userRepository->material($this->chat_id));
+                    $this->askMaterialPriceForQuantityType();
+                    break;
+                case TelegramHelper::ASK_MATERIAL_PRICE_FOR_TYPE:
+                    $this->objectRepository->updateTask(['price_for_type' => $this->text], $this->userRepository->material($this->chat_id));
+                    $this->askMaterialPriceForWork();
+                    break;
+                case TelegramHelper::ASK_MATERIAL_PRICE_FOR_WORK:
+                    $this->objectRepository->updateTask(['price_for_work' => $this->text], $this->userRepository->material($this->chat_id));
+                    $this->confirmMaterial();
                     break;
                 case TelegramHelper::ASK_TASK_DESCRIPTION:
                     $this->objectRepository->updateTask(['description' => $this->text], $this->userRepository->task($this->chat_id));
@@ -210,6 +247,20 @@ class TelegramService
                             break;
                         default:
                             $this->confirmTask();
+                            break;
+                    }
+                    break;
+                case TelegramHelper::CONFIRM_MATERIAL:
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
+                    switch ($keyword) {
+                        case 'confirm_material_button':
+                            $this->confirmMaterialButton();
+                            break;
+                        case 'cancel_material_button':
+                            $this->cancelMaterialButton();
+                            break;
+                        default:
+                            $this->confirmMaterial();
                             break;
                     }
                     break;
@@ -348,7 +399,29 @@ class TelegramService
     {
         $text = $this->textRepository->getOrCreate('ask_material_quantity_type_text', $this->userRepository->language($this->chat_id));
         $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
-        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_NAME);
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_QUANTITY_TYPE);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+    }
+
+    public function askMaterialQuantity(): void
+    {
+        $text = $this->textRepository->getOrCreate('ask_material_quantity_text', $this->userRepository->language($this->chat_id));
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_QUANTITY);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+    }
+    public function askMaterialPriceForQuantityType(): void
+    {
+        $text = $this->textRepository->getOrCreate('ask_material_price_for_quantity_type_text', $this->userRepository->language($this->chat_id));
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_PRICE_FOR_TYPE);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+    }
+    public function askMaterialPriceForWork(): void
+    {
+        $text = $this->textRepository->getOrCreate('ask_material_price_for_work_text', $this->userRepository->language($this->chat_id));
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_PRICE_FOR_WORK);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
 
@@ -394,6 +467,20 @@ class TelegramService
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
+    public function confirmMaterial(): void
+    {
+        $material_id = $this->userRepository->material($this->chat_id);
+        $material = Material::find($material_id);
+        $task = (new Task)->find($material->task_id);
+        $text = "Task name: $task->name\n\n Material: $material->name\nMaterial Quantity: $material->quantity $material->quantity_type\nPrice for 1 $material->quantity_type: $material->price_for_type\nPrice For Work: $material->price_for_work";
+        $textConfirm = $this->textRepository->getOrCreate('confirm_material_button', $this->userRepository->language($this->chat_id));
+        $textCancel = $this->textRepository->getOrCreate('cancel_material_button', $this->userRepository->language($this->chat_id));
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::CONFIRM_MATERIAL);
+        $option = [[$this->telegram->buildKeyboardButton($textCancel), $this->telegram->buildKeyboardButton($textConfirm)]];
+        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+    }
 
     public function cancelObjectButton(): void
     {
@@ -402,16 +489,6 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();
     }
-    public function cancelTaskButton(): void
-    {
-        $task_id = $this->userRepository->task($this->chat_id);
-        $task = (new Task)->find($task_id);
-        $task->delete();
-        $text = $this->textRepository->getOrCreate('success_cancel_task_text', $this->userRepository->language($this->chat_id));
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
-        $this->showMainPage();
-    }
-
     public function confirmObjectButton($object_id=null): void
     {
         if ($object_id) {
@@ -425,9 +502,35 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();
     }
+
+    public function cancelTaskButton(): void
+    {
+        $task_id = $this->userRepository->task($this->chat_id);
+        $task = (new Task)->find($task_id);
+        $task->delete();
+        $text = $this->textRepository->getOrCreate('success_cancel_task_text', $this->userRepository->language($this->chat_id));
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+        $this->showMainPage();
+    }
     public function confirmTaskButton(): void
     {
         $text = $this->textRepository->getOrCreate('success_confirm_task_text', $this->userRepository->language($this->chat_id));
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+        $this->showMainPage();
+    }
+
+    public function cancelMaterialButton(): void
+    {
+        $material_id = $this->userRepository->material($this->chat_id);
+        $material = (new Task)->find($material_id);
+        $material->delete();
+        $text = $this->textRepository->getOrCreate('success_cancel_material_text', $this->userRepository->language($this->chat_id));
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+        $this->showMainPage();
+    }
+    public function confirmMaterialButton(): void
+    {
+        $text = $this->textRepository->getOrCreate('success_confirm_material_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();
     }
@@ -439,7 +542,7 @@ class TelegramService
         foreach ($objects as $object) {
             $buttonText = $object->name;
             $temp[] = $this->telegram->buildKeyboardButton($buttonText);
-            if (count($temp) === 3) {
+            if ($this->count($temp) === 3) {
                 $option[] = $temp;
                 $temp = [];
             }
@@ -513,7 +616,7 @@ class TelegramService
     {
         $materials = Material::where('task_id', $task_id)->get();
 
-        $text = $this->textRepository->getOrCreate('all_tasks_text', $this->userRepository->language($this->chat_id));
+        $text = $this->textRepository->getOrCreate('all_materials_text', $this->userRepository->language($this->chat_id));
         foreach ($materials as $material) {
             $buttonText = $material->name;
             $temp[] = $this->telegram->buildKeyboardButton($buttonText);
@@ -523,12 +626,13 @@ class TelegramService
             }
         }
 
+        $option = [];
         if (!empty($temp)) {
             $option[] = $temp;
         }
-        $this->userRepository->page($this->chat_id, TelegramHelper::ALL_TASKS);
+        $this->userRepository->page($this->chat_id, TelegramHelper::ALL_MATERIALS);
         $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
-        $textButtonAdd = $this->textRepository->getOrCreate('add_task_button', $this->userRepository->language($this->chat_id));
+        $textButtonAdd = $this->textRepository->getOrCreate('add_material_button', $this->userRepository->language($this->chat_id));
         array_unshift($option, [$this->telegram->buildKeyboardButton($textButtonAdd)]);
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
         $keyboard = $this->telegram->buildKeyBoard($option, true, true);

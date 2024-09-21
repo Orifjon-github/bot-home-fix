@@ -72,6 +72,26 @@ class ObjectRepository
         return $branch->tasks()->create(['name' => $name]);
     }
 
+    public function createMaterial($chat_id, $name, $task_id=null)
+    {
+        $user = User::where('chat_id', $chat_id)->first();
+        if ($task_id) {
+            $task = $this->task->find($task_id);
+        } else {
+            $task = $user->objects()
+                ->latest()
+                ->first()
+                ->branches()
+                ->latest()
+                ->first()
+                ->tasks()
+                ->latest()
+                ->first();
+        }
+
+        return $task->materials()->create(['name' => $name]);
+    }
+
     public function updateBranch($chat_id, $address, $object_id=null): bool
     {
         $user = User::where('chat_id', $chat_id)->first();
@@ -89,6 +109,13 @@ class ObjectRepository
     public function updateTask($data, $task_id): bool
     {
         $task = $this->task->find($task_id);
+        $task->update($data);
+        return true;
+    }
+
+    public function updateMaterial($data, $material_id): bool
+    {
+        $task = $this->task->find($material_id);
         $task->update($data);
         return true;
     }

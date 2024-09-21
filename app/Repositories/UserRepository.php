@@ -67,6 +67,13 @@ class UserRepository
         return $task_id ? $this->model->updateOrCreate(['chat_id' => $chat_id], ['chat_id' => $chat_id, 'task_id' => $task_id]) : $this->model::where('chat_id', $chat_id)->first()->task_id;
     }
 
+    public function material($chat_id, $material_id=null, $set_null = false) {
+        if ($set_null) {
+            return $this->model->where('chat_id', $chat_id)->update(['material_id' => null]);
+        }
+        return $material_id ? $this->model->updateOrCreate(['chat_id' => $chat_id], ['chat_id' => $chat_id, 'material_id' => $material_id]) : $this->model::where('chat_id', $chat_id)->first()->material_id;
+    }
+
     public function delete($chat_id): void
     {
         $this->model->where('chat_id', $chat_id)->update(['status' => 'delete-account']);

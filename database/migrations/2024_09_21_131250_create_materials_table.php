@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('materials', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->string('task_id');
+            $table->string('quantity_type')->nullable();
+            $table->string('quantity')->nullable();
+            $table->string('price_for_type')->nullable();
+            $table->string('price_for_work')->nullable();
             $table->timestamps();
         });
     }
