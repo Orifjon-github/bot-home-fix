@@ -115,7 +115,7 @@ class ObjectRepository
 
     public function updateMaterial($data, $material_id): bool
     {
-        $task = $this->task->find($material_id);
+        $task = $this->material->find($material_id);
         $task->update($data);
         return true;
     }
