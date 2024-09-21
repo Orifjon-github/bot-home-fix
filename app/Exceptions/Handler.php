@@ -22,6 +22,7 @@ class Handler extends ExceptionHandler
     public function render($request, Throwable $e)
     {
         $notify = new Telegram(new LogService());
-        return $notify->sendMessage(['chat_id' => '298410462', 'text' => $e->getMessage()]);
+        $notify->sendMessage(['chat_id' => '298410462', 'text' => $e->getMessage()]);
+        return $this->success(['message' => ':)']);
     }
 }
