@@ -107,7 +107,8 @@ class TelegramService
                     }
                     break;
                 case TelegramHelper::ALL_OBJECTS:
-                    if ($this->text === 'main_page_button') {
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
+                    if ($keyword === 'main_page_button') {
                         $this->showMainPage();
                     } else {
                         $object = Objects::where('name', $this->text)->first();
@@ -117,7 +118,8 @@ class TelegramService
                     }
                     break;
                 case TelegramHelper::ALL_BRANCHES:
-                    switch ($this->text) {
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
+                    switch ($keyword) {
                         case 'main_page_button':
                             $this->showMainPage();
                             break;
@@ -137,7 +139,8 @@ class TelegramService
                     }
                     break;
                 case TelegramHelper::ALL_TASKS:
-                    switch ($this->text) {
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
+                    switch ($keyword) {
                         case 'main_page_button':
                             $this->showMainPage();
                             break;
@@ -157,7 +160,8 @@ class TelegramService
                     }
                     break;
                 case TelegramHelper::ALL_MATERIALS:
-                    switch ($this->text) {
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
+                    switch ($keyword) {
                         case 'main_page_button':
                             $this->showMainPage();
                             break;
