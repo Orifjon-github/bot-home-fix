@@ -229,6 +229,7 @@ class TelegramService
                     if ($photoArray) {
                         $startTime = time();
                         $processPhotoIDs = [];
+                        $hasProcessedPhotos = false;
                         while ((time() - $startTime) < 5) {
                             if ($photoArray) {
                                 $photo = end($photoArray);
@@ -239,13 +240,15 @@ class TelegramService
                                     $filePath = $file['result']['file_path'] ?? null;
                                     if ($filePath) {
                                         $this->saveImage($filePath, $fileId);
+                                        $hasProcessedPhotos = true;
                                     }
                                 }
-                            } else {
-                                $this->confirmTask();
                             }
                             usleep(500000); // 0.5 soniya kutish
                             $photoArray = $this->telegram->getUpdateType();
+                        }
+                        if ($hasProcessedPhotos) {
+                            $this->confirmTask();
                         }
                     } else {
                         $this->askTaskImage();
