@@ -14,6 +14,7 @@ use App\Repositories\TelegramTextRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use function GuzzleHttp\json_encode;
 
 class TelegramService
 {
@@ -221,14 +222,16 @@ class TelegramService
                 case TelegramHelper::ASK_TASK_IMAGE:
                     $photoArray = $this->telegram->getUpdateType();
                     if ($photoArray) {
-                        $photoIds = array_map(fn($photo) => $photo['file_id'], $photoArray);
-                        foreach ($photoIds as $photoId) {
-                            $file = $this->telegram->getFile($photoId);
-                            $filePath = $file['result']['file_path'] ?? null;
-                            if ($filePath) {
-                                $this->saveImage($filePath);
-                            }
-                        }
+                        Log::error(json_encode($photoArray));
+                        die();
+//                        $photoIds = array_map(fn($photo) => $photo['file_id'], $photoArray);
+//                        foreach ($photoIds as $photoId) {
+//                            $file = $this->telegram->getFile($photoId);
+//                            $filePath = $file['result']['file_path'] ?? null;
+//                            if ($filePath) {
+//                                $this->saveImage($filePath);
+//                            }
+//                        }
                         $this->confirmTask();
                     }else {
                         $this->askTaskImage();
