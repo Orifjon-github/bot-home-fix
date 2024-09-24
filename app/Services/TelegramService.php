@@ -229,31 +229,29 @@ class TelegramService
                     if ($photoArray) {
                         $startTime = time();
                         $processPhotoIDs = [];
-                        $hasProcessedPhotos = false;
+
                         while ((time() - $startTime) < 5) {
                             if ($photoArray) {
                                 $photo = end($photoArray);
                                 $fileId = $photo['file_id'];
                                 $fileName = $photo['file_unique_id'];
+
                                 if (!in_array($fileId, $processPhotoIDs)) {
-                                    $processPhotoIDs[] = $fileId;
+                                    $processPhotoIDs[] = $fileId; // Yangi rasm ID ni qo'shish
                                     $file = $this->telegram->getFile($fileId);
                                     $filePath = $file['result']['file_path'] ?? null;
+
                                     if ($filePath) {
-                                        $this->saveImage($filePath, $fileName);
-                                        $hasProcessedPhotos = true;
+                                        $this->saveImage($filePath, $fileName); // Rasmni saqlash
                                     }
                                 }
                             }
-                            usleep(500000); // 0.5 soniya kutish
-                            $photoArray = $this->telegram->getUpdateType();
                         }
-                        if ($hasProcessedPhotos) {
-                            $this->confirmTask();
-                        }
+                        $this->confirmTask();
                     } else {
                         $this->askTaskImage();
                     }
+
                     break;
                 case TelegramHelper::CONFIRM_OBJECT:
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
