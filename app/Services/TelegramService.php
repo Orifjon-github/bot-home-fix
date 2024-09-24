@@ -228,20 +228,25 @@ class TelegramService
                     $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "⏳ Kutib turing, rasmlar qayta ishlanmoqda..."]);
                     if ($photoArray) {
                         $startTime = time();
+                        $processPhotoIDs = [];
                         while ((time() - $startTime) < 5) {
                             if ($photoArray) {
                                 $photo = end($photoArray);
                                 $fileId = $photo['file_id'];
-                                $file = $this->telegram->getFile($fileId);
-                                $filePath = $file['result']['file_path'] ?? null;
-                                if ($filePath) {
-                                    $this->saveImage($filePath, $fileId);
+                                if (!in_array($fileId, $processPhotoIDs)) {
+                                    $processPhotoIDs[] = $fileId;
+                                    $file = $this->telegram->getFile($fileId);
+                                    $filePath = $file['result']['file_path'] ?? null;
+                                    if ($filePath) {
+                                        $this->saveImage($filePath, $fileId);
+                                    }
                                 }
+                            } else {
+                                $this->confirmTask();
                             }
                             usleep(500000); // 0.5 soniya kutish
                             $photoArray = $this->telegram->getUpdateType();
                         }
-                        $this->confirmTask();
                     } else {
                         $this->askTaskImage();
                     }
@@ -750,7 +755,8 @@ class TelegramService
         $token = env('TELEGRAM_BOT_TOKEN');
         $url = "https://api.telegram.org/file/bot{$token}/{$filePath}";
         $imageContent = file_get_contents($url);
-        $storagePath = "task-images/{$file_name}"; // Saqlanadigan yo'l
+        $extension = pathinfo($filePath, PATHINFO_EXTENSION); // fayl formatini olish
+        $storagePath = "task-images/{$file_name}.{$extension}";
         Storage::disk('public')->put($storagePath, $imageContent);
         $path = str_replace('public/', '/storage/', $storagePath);
         $task = (new Task)->find($this->userRepository->task($this->chat_id));
