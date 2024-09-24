@@ -226,6 +226,7 @@ class TelegramService
                 case TelegramHelper::ASK_TASK_IMAGE:
                     $photoArray = $this->telegram->getUpdateType();
                     if ($photoArray) {
+                        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => json_encode($photoArray)]);
                         Log::error(json_encode($photoArray));
                         die();
 //                        $photoIds = array_map(fn($photo) => $photo['file_id'], $photoArray);
