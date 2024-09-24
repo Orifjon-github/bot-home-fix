@@ -225,7 +225,7 @@ class TelegramService
                     break;
                 case TelegramHelper::ASK_TASK_IMAGE:
                     $photoArray = $this->telegram->getUpdateType();
-                    $this->telegram->sendMessage($userId, "⏳ Kutib turing, rasmlar qayta ishlanmoqda...");
+                    $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "⏳ Kutib turing, rasmlar qayta ishlanmoqda..."]);
                     if ($photoArray) {
                         $startTime = time();
                         while ((time() - $startTime) < 5) {
