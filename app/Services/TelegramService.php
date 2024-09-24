@@ -241,12 +241,11 @@ class TelegramService
                                         $this->saveImage($filePath, $fileId);
                                     }
                                 }
-                            } else {
-                                $this->confirmTask();
                             }
                             usleep(500000); // 0.5 soniya kutish
                             $photoArray = $this->telegram->getUpdateType();
                         }
+                        $this->confirmTask();
                     } else {
                         $this->askTaskImage();
                     }
