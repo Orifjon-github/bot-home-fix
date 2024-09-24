@@ -234,12 +234,13 @@ class TelegramService
                             if ($photoArray) {
                                 $photo = end($photoArray);
                                 $fileId = $photo['file_id'];
+                                $fileName = $photo['file_unique_id'];
                                 if (!in_array($fileId, $processPhotoIDs)) {
                                     $processPhotoIDs[] = $fileId;
                                     $file = $this->telegram->getFile($fileId);
                                     $filePath = $file['result']['file_path'] ?? null;
                                     if ($filePath) {
-                                        $this->saveImage($filePath, $fileId);
+                                        $this->saveImage($filePath, $fileName);
                                         $hasProcessedPhotos = true;
                                     }
                                 }
