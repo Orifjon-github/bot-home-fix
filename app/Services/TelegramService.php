@@ -229,25 +229,24 @@ class TelegramService
                     if ($photoArray) {
                         $startTime = time();
                         $processPhotoIDs = [];
-
                         while ((time() - $startTime) < 5) {
                             if ($photoArray) {
                                 $photo = end($photoArray);
                                 $fileId = $photo['file_id'];
-                                $fileName = $photo['file_unique_id'];
-
                                 if (!in_array($fileId, $processPhotoIDs)) {
-                                    $processPhotoIDs[] = $fileId; // Yangi rasm ID ni qo'shish
+                                    $processPhotoIDs[] = $fileId;
                                     $file = $this->telegram->getFile($fileId);
                                     $filePath = $file['result']['file_path'] ?? null;
-
                                     if ($filePath) {
-                                        $this->saveImage($filePath, $fileName); // Rasmni saqlash
+                                        $this->saveImage($filePath, $fileId);
                                     }
                                 }
+                            } else {
+                                $this->confirmTask();
                             }
+                            usleep(500000); // 0.5 soniya kutish
+                            $photoArray = $this->telegram->getUpdateType();
                         }
-                        $this->confirmTask();
                     } else {
                         $this->askTaskImage();
                     }
