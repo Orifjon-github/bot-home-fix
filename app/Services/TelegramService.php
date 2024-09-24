@@ -225,20 +225,24 @@ class TelegramService
                     break;
                 case TelegramHelper::ASK_TASK_IMAGE:
                     $photoArray = $this->telegram->getUpdateType();
+                    $this->telegram->sendMessage($userId, "⏳ Kutib turing, rasmlar qayta ishlanmoqda...");
                     if ($photoArray) {
-                        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => json_encode($photoArray)]);
-                        Log::error(json_encode($photoArray));
-                        die();
-//                        $photoIds = array_map(fn($photo) => $photo['file_id'], $photoArray);
-//                        foreach ($photoIds as $photoId) {
-//                            $file = $this->telegram->getFile($photoId);
-//                            $filePath = $file['result']['file_path'] ?? null;
-//                            if ($filePath) {
-//                                $this->saveImage($filePath);
-//                            }
-//                        }
+                        $startTime = time();
+                        while ((time() - $startTime) < 5) {
+                            if ($photoArray) {
+                                $photo = end($photoArray);
+                                $fileId = $photo['file_id'];
+                                $file = $this->telegram->getFile($fileId);
+                                $filePath = $file['result']['file_path'] ?? null;
+                                if ($filePath) {
+                                    $this->saveImage($filePath);
+                                }
+                            }
+                            usleep(500000); // 0.5 soniya kutish
+                            $photoArray = $this->telegram->getUpdateType();
+                        }
                         $this->confirmTask();
-                    }else {
+                    } else {
                         $this->askTaskImage();
                     }
                     break;
@@ -380,6 +384,7 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_BRANCH_NAME);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
+
     public function askTaskName(): void
     {
         $text = $this->textRepository->getOrCreate('ask_task_name_text', $this->userRepository->language($this->chat_id));
@@ -387,6 +392,7 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_NAME);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
+
     public function askTaskQuantity(): void
     {
         $text = $this->textRepository->getOrCreate('ask_task_quantity_text', $this->userRepository->language($this->chat_id));
@@ -394,6 +400,7 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_QUANTITY);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
+
     public function askTaskDescription(): void
     {
         $text = $this->textRepository->getOrCreate('ask_task_description_text', $this->userRepository->language($this->chat_id));
@@ -401,6 +408,7 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_DESCRIPTION);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
+
     public function askTaskImage(): void
     {
         $text = $this->textRepository->getOrCreate('ask_task_image_text', $this->userRepository->language($this->chat_id));
@@ -408,6 +416,7 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_IMAGE);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
+
     public function askMaterialName(): void
     {
         $text = $this->textRepository->getOrCreate('ask_material_name_text', $this->userRepository->language($this->chat_id));
@@ -415,6 +424,7 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_NAME);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
+
     public function askMaterialQuantityType(): void
     {
         $text = $this->textRepository->getOrCreate('ask_material_quantity_type_text', $this->userRepository->language($this->chat_id));
@@ -430,6 +440,7 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_QUANTITY);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
+
     public function askMaterialPriceForQuantityType(): void
     {
         $text = $this->textRepository->getOrCreate('ask_material_price_for_quantity_type_text', $this->userRepository->language($this->chat_id));
@@ -437,6 +448,7 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_PRICE_FOR_TYPE);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
+
     public function askMaterialPriceForWork(): void
     {
         $text = $this->textRepository->getOrCreate('ask_material_price_for_work_text', $this->userRepository->language($this->chat_id));
@@ -453,7 +465,7 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
 
-    public function confirmObject($object_id=null): void
+    public function confirmObject($object_id = null): void
     {
         if ($object_id) {
             $object = (new Objects)->find($this->userRepository->object($this->chat_id));
@@ -474,6 +486,7 @@ class TelegramService
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
+
     public function confirmTask(): void
     {
         $task_id = $this->userRepository->task($this->chat_id);
@@ -487,6 +500,7 @@ class TelegramService
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
+
     public function confirmMaterial(): void
     {
         $material_id = $this->userRepository->material($this->chat_id);
@@ -509,7 +523,8 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();
     }
-    public function confirmObjectButton($object_id=null): void
+
+    public function confirmObjectButton($object_id = null): void
     {
         if ($object_id) {
             $object = (new Objects)->find($object_id);
@@ -532,6 +547,7 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();
     }
+
     public function confirmTaskButton(): void
     {
         $text = $this->textRepository->getOrCreate('success_confirm_task_text', $this->userRepository->language($this->chat_id));
@@ -548,6 +564,7 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();
     }
+
     public function confirmMaterialButton(): void
     {
         $text = $this->textRepository->getOrCreate('success_confirm_material_text', $this->userRepository->language($this->chat_id));
@@ -728,27 +745,16 @@ class TelegramService
         }
     }
 
-    private function saveImage($filePath)
+    private function saveImage($filePath): void
     {
         $token = env('TELEGRAM_BOT_TOKEN');
         $url = "https://api.telegram.org/file/bot{$token}/{$filePath}";
-
-        // Rasm kontentini olish
         $imageContent = file_get_contents($url);
-
-        // Rasmni saqlash
         $fileName = basename($filePath); // Telegramdan olingan fayl nomi
         $storagePath = "task-images/{$fileName}"; // Saqlanadigan yo'l
-
-        // Rasmni saqlash
         Storage::disk('public')->put($storagePath, $imageContent);
-
-        // Fayl yo'lini o'zgartirish
         $path = str_replace('public/', '/storage/', $storagePath);
-
-        // Task va rasmni bazaga saqlash
         $task = (new Task)->find($this->userRepository->task($this->chat_id));
         $task->images()->create(['image' => $path]);
     }
-
 }
