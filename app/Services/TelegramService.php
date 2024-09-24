@@ -235,7 +235,7 @@ class TelegramService
                                 $file = $this->telegram->getFile($fileId);
                                 $filePath = $file['result']['file_path'] ?? null;
                                 if ($filePath) {
-                                    $this->saveImage($filePath);
+                                    $this->saveImage($filePath, $fileId);
                                 }
                             }
                             usleep(500000); // 0.5 soniya kutish
@@ -745,13 +745,12 @@ class TelegramService
         }
     }
 
-    private function saveImage($filePath): void
+    private function saveImage($filePath, $file_name): void
     {
         $token = env('TELEGRAM_BOT_TOKEN');
         $url = "https://api.telegram.org/file/bot{$token}/{$filePath}";
         $imageContent = file_get_contents($url);
-        $fileName = basename($filePath); // Telegramdan olingan fayl nomi
-        $storagePath = "task-images/{$fileName}"; // Saqlanadigan yo'l
+        $storagePath = "task-images/{$file_name}"; // Saqlanadigan yo'l
         Storage::disk('public')->put($storagePath, $imageContent);
         $path = str_replace('public/', '/storage/', $storagePath);
         $task = (new Task)->find($this->userRepository->task($this->chat_id));
