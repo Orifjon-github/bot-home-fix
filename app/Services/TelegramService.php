@@ -269,6 +269,20 @@ class TelegramService
                             break;
                     }
                     break;
+                case TelegramHelper::ASK_AFTER_CONFIRM_TASK:
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
+                    switch ($keyword) {
+                        case 'tasks_page_button':
+                            $this->showTasks($this->userRepository->branch($this->chat_id));
+                            break;
+                        case 'add_material_button':
+                            $this->askMaterialName();
+                            break;
+                        default:
+                            $this->confirmTaskButton();
+                            break;
+                    }
+                    break;
                 case TelegramHelper::CONFIRM_MATERIAL:
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
                     switch ($keyword) {
@@ -554,8 +568,14 @@ class TelegramService
     public function confirmTaskButton(): void
     {
         $text = $this->textRepository->getOrCreate('success_confirm_task_text', $this->userRepository->language($this->chat_id));
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
-        $this->showMainPage();
+        $textConfirm = $this->textRepository->getOrCreate('tasks_page_button', $this->userRepository->language($this->chat_id));
+        $textCancel = $this->textRepository->getOrCreate('add_material_button', $this->userRepository->language($this->chat_id));
+
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_AFTER_CONFIRM_TASK);
+        $option = [[$this->telegram->buildKeyboardButton($textConfirm), $this->telegram->buildKeyboardButton($textCancel)]];
+        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+
     }
 
     public function cancelMaterialButton(): void

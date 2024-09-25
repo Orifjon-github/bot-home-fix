@@ -25,6 +25,7 @@ class TelegramHelper
           ASK_TASK_QUANTITY = 'ask_task_quantity',
           ASK_TASK_DESCRIPTION = 'ask_task_description',
           ASK_TASK_IMAGE = 'ask_task_image',
+          ASK_AFTER_CONFIRM_TASK = 'ask_after_confirm_task',
           ASK_MATERIAL_NAME = 'ask_material_name',
           ASK_MATERIAL_QUANTITY_TYPE = 'ask_material_quantity_type',
           ASK_MATERIAL_QUANTITY = 'ask_material_quantity',
