@@ -639,27 +639,32 @@ class TelegramService
     {
         $branch_id = $this->userRepository->branch($this->chat_id);
         $tasks = Task::where('branch_id', $branch_id)->get();
-
         $text = $this->textRepository->getOrCreate('all_tasks_text', $this->userRepository->language($this->chat_id));
+        $temp = [];
+        $option = [];
         foreach ($tasks as $task) {
             $buttonText = $task->name;
             $temp[] = $this->telegram->buildKeyboardButton($buttonText);
+
             if (count($temp) === 3) {
                 $option[] = $temp;
-                $temp = [];
+                $temp = []; // Reset temp after grouping 3 buttons
             }
         }
-        $option = [];
         if (!empty($temp)) {
             $option[] = $temp;
         }
-        $this->userRepository->page($this->chat_id, TelegramHelper::ALL_TASKS);
-        $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
         $textButtonAdd = $this->textRepository->getOrCreate('add_task_button', $this->userRepository->language($this->chat_id));
         array_unshift($option, [$this->telegram->buildKeyboardButton($textButtonAdd)]);
+        $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
         $keyboard = $this->telegram->buildKeyBoard($option, true, true);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+        $this->telegram->sendMessage([
+            'chat_id' => $this->chat_id,
+            'text' => $text,
+            'reply_markup' => $keyboard,
+            'parse_mode' => 'html'
+        ]);
     }
 
     public function showMaterials(): void
