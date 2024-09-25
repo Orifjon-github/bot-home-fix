@@ -127,12 +127,15 @@ class TelegramService
                             break;
                         default:
                             $branch = Branch::where('name', $this->text)->first();
-                            if (!$branch) $this->showBranches();
-                            $this->userRepository->branch($this->chat_id, $branch->id);
-                            if ($this->userRepository->role($this->chat_id) == 'manager') {
-                                $this->technicalWork();
+                            if (!$branch) {
+                                $this->showBranches();
                             } else {
-                                $this->showTasks();
+                                $this->userRepository->branch($this->chat_id, $branch->id);
+                                if ($this->userRepository->role($this->chat_id) == 'manager') {
+                                    $this->technicalWork();
+                                } else {
+                                    $this->showTasks();
+                                }
                             }
                             break;
                     }
@@ -660,6 +663,7 @@ class TelegramService
         $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
         $keyboard = $this->telegram->buildKeyBoard($option, true, true);
+        $this->userRepository->page($this->chat_id, TelegramHelper::ALL_TASKS);
         $this->telegram->sendMessage([
             'chat_id' => $this->chat_id,
             'text' => $text,
