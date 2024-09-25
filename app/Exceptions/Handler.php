@@ -21,8 +21,18 @@ class Handler extends ExceptionHandler
 
     public function render($request, Throwable $e)
     {
+        $errorMessage = sprintf(
+            "Error: %s\nFile: %s\nLine: %d",
+            $e->getMessage(),
+            $e->getFile(),
+            $e->getLine()
+        );
+
+        // Send error message to Telegram
         $notify = new Telegram(new LogService());
-        $notify->sendMessage(['chat_id' => '298410462', 'text' => $e->getMessage()]);
+        $notify->sendMessage(['chat_id' => '298410462', 'text' => $errorMessage]);
+
+        // Return a generic success message (adjust if needed)
         return $this->success(['message' => ':)']);
     }
 }
