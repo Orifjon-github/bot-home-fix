@@ -535,7 +535,7 @@ class TelegramService
         $object->delete();
         $text = $this->textRepository->getOrCreate('success_cancel_object_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
-        $this->showMainPage();
+        $this->showObjects();
     }
 
     public function confirmObjectButton(): void
@@ -545,7 +545,7 @@ class TelegramService
         $this->sendAll($branch->id);
         $text = $this->textRepository->getOrCreate('success_confirm_object_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
-        $this->showMainPage();
+        $this->showObjects();
     }
 
     public function cancelTaskButton(): void
@@ -555,7 +555,7 @@ class TelegramService
         $task->delete();
         $text = $this->textRepository->getOrCreate('success_cancel_task_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
-        $this->showMainPage();
+        $this->showTasks();
     }
 
     public function confirmTaskButton(): void
@@ -566,7 +566,7 @@ class TelegramService
 
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_AFTER_CONFIRM_TASK);
         $option = [[$this->telegram->buildKeyboardButton($textConfirm), $this->telegram->buildKeyboardButton($textCancel)]];
-        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        $keyboard = $this->telegram->buildKeyBoard($option, true, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
 
     }
@@ -578,14 +578,14 @@ class TelegramService
         $material->delete();
         $text = $this->textRepository->getOrCreate('success_cancel_material_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
-        $this->showMainPage();
+        $this->showMaterials();
     }
 
     public function confirmMaterialButton(): void
     {
         $text = $this->textRepository->getOrCreate('success_confirm_material_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
-        $this->showMainPage();
+        $this->showMaterials();
     }
 
     public function showObjects(): void
