@@ -238,8 +238,8 @@ class TelegramService
                                 $this->saveImage($filePath, $fileId);
                             }
                         }
+                        $this->askTaskImage(true);
                     }
-                    $this->askTaskImage(true);
                     break;
                 case TelegramHelper::CONFIRM_OBJECT:
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
