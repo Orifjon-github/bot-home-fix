@@ -349,7 +349,6 @@ class TelegramService
 
     public function showMainPage(): void
     {
-        $this->userRepository->object($this->chat_id, null, true);
         $role = $this->userRepository->role($this->chat_id);
         $text = $this->textRepository->getOrCreate('main_page_text', $this->userRepository->language($this->chat_id));
         $textButton_3 = $this->textRepository->getOrCreate('my_works_button', $this->userRepository->language($this->chat_id));
@@ -528,7 +527,9 @@ class TelegramService
 
     public function cancelObjectButton(): void
     {
-        $this->objectRepository->deleteObject($this->chat_id);
+        $object_id = $this->userRepository->object($this->chat_id);
+        $object = (new Objects)->find($object_id);
+        $object->delete();
         $text = $this->textRepository->getOrCreate('success_cancel_object_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();

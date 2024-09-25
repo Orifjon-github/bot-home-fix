@@ -66,14 +66,4 @@ class ObjectRepository
         $task->update($data);
         return true;
     }
-
-    public function deleteObject($chat_id): bool
-    {
-        $user = User::where('chat_id', $chat_id)->first();
-        $user->objects()
-            ->latest()
-            ->first()
-            ->delete();
-        return true;
-    }
 }
