@@ -12,9 +12,7 @@ use App\Models\User;
 use App\Repositories\ObjectRepository;
 use App\Repositories\TelegramTextRepository;
 use App\Repositories\UserRepository;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use function GuzzleHttp\json_encode;
 
 class TelegramService
 {
@@ -129,12 +127,12 @@ class TelegramService
                             break;
                         default:
                             $branch = Branch::where('name', $this->text)->first();
-                            if (!$branch) $this->showBranches($this->userRepository->object($this->chat_id));
+                            if (!$branch) $this->showBranches();
                             $this->userRepository->branch($this->chat_id, $branch->id);
                             if ($this->userRepository->role($this->chat_id) == 'manager') {
                                 $this->technicalWork();
                             } else {
-                                $this->showTasks($branch->id);
+                                $this->showTasks();
                             }
                             break;
                     }
@@ -150,12 +148,12 @@ class TelegramService
                             break;
                         default:
                             $task = Task::where('name', $this->text)->first();
-                            if (!$task) $this->showTasks($this->userRepository->branch($this->chat_id));
+                            if (!$task) $this->showTasks();
                             $this->userRepository->task($this->chat_id, $task->id);
                             if ($this->userRepository->role($this->chat_id) == 'manager') {
                                 $this->technicalWork();
                             } else {
-                                $this->showMaterials($task->id); // show materials
+                                $this->showMaterials(); // show materials
                             }
                             break;
                     }
@@ -171,31 +169,33 @@ class TelegramService
                             break;
                         default:
                             $material = Material::where('name', $this->text)->first();
-                            if (!$material) $this->showMaterials($this->userRepository->task($this->chat_id));
+                            if (!$material) $this->showMaterials();
                             $this->userRepository->material($this->chat_id, $material->id);
                             $this->technicalWork();
                             break;
                     }
                     break;
                 case TelegramHelper::ASK_OBJECT_NAME:
-                    $this->objectRepository->createObject($this->chat_id, $this->text);
+                    $object = $this->objectRepository->createObject($this->chat_id, $this->text);
+                    $this->userRepository->object($this->chat_id, $object->id);
                     $this->askBranchName();
                     break;
                 case TelegramHelper::ASK_BRANCH_NAME:
-                    $this->objectRepository->createBranch($this->chat_id, $this->text, $this->userRepository->object($this->chat_id));
+                    $branch = $this->objectRepository->createBranch($this->text, $this->userRepository->object($this->chat_id));
+                    $this->userRepository->branch($this->chat_id, $branch->id);
                     $this->askBranchAddress();
                     break;
                 case TelegramHelper::ASK_BRANCH_ADDRESS:
-                    $this->objectRepository->updateBranch($this->chat_id, $this->text, $this->userRepository->object($this->chat_id));
-                    $this->confirmObject($this->userRepository->object($this->chat_id));
+                    $this->objectRepository->updateBranch($this->text, $this->userRepository->branch($this->chat_id));
+                    $this->confirmObject();
                     break;
                 case TelegramHelper::ASK_TASK_NAME:
-                    $task = $this->objectRepository->createTask($this->chat_id, $this->text, $this->userRepository->branch($this->chat_id));
+                    $task = $this->objectRepository->createTask($this->text, $this->userRepository->branch($this->chat_id));
                     $this->userRepository->task($this->chat_id, $task->id);
                     $this->askTaskQuantity();
                     break;
                 case TelegramHelper::ASK_MATERIAL_NAME:
-                    $material = $this->objectRepository->createMaterial($this->chat_id, $this->text, $this->userRepository->task($this->chat_id));
+                    $material = $this->objectRepository->createMaterial($this->text, $this->userRepository->task($this->chat_id));
                     $this->userRepository->material($this->chat_id, $material->id);
                     $this->askMaterialQuantityType();
                     break;
@@ -229,7 +229,7 @@ class TelegramService
                         $this->confirmTask();
                     } else{
                         $photoArray = $this->telegram->getUpdateType();
-                        if ($photoArray) {
+                        if ($photoArray && is_array($photoArray)) {
                             $photo = end($photoArray);
                             $fileId = $photo['file_id'];
                             $file = $this->telegram->getFile($fileId);
@@ -245,7 +245,7 @@ class TelegramService
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
                     switch ($keyword) {
                         case 'confirm_object_button':
-                            $this->confirmObjectButton($this->userRepository->object($this->chat_id));
+                            $this->confirmObjectButton();
                             break;
                         case 'cancel_object_button':
                             $this->cancelObjectButton();
@@ -273,7 +273,7 @@ class TelegramService
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
                     switch ($keyword) {
                         case 'tasks_page_button':
-                            $this->showTasks($this->userRepository->branch($this->chat_id));
+                            $this->showTasks();
                             break;
                         case 'add_material_button':
                             $this->askMaterialName();
@@ -482,19 +482,12 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
 
-    public function confirmObject($object_id = null): void
+    public function confirmObject(): void
     {
-        if ($object_id) {
-            $object = (new Objects)->find($this->userRepository->object($this->chat_id));
-        } else {
-            $object = $this->objectRepository->getLatestObject($this->chat_id);
-        }
-        if ($object) {
-            $branch = $this->objectRepository->getLatestBranch($object->id);
-            $text = "Object name: $object->name\n\nFilial name: $branch->name\nFilial address: $branch->address\n\nKiritgan malumotlaringiz Barcha xodimlarga yuboriladi!! Obyekt va Filialni tasdiqlaysizmi?";
-        } else {
-            $text = $this->textRepository->getOrCreate('confirm_object_text', $this->userRepository->language($this->chat_id));
-        }
+        $object = (new Objects)->find($this->userRepository->object($this->chat_id));
+        $branch_id = $this->userRepository->branch($this->chat_id);
+        $branch = Branch::find($branch_id);
+        $text = "Object name: $object->name\n\nFilial name: $branch->name\nFilial address: $branch->address\n\nKiritgan malumotlaringiz Barcha xodimlarga yuboriladi!! Obyekt va Filialni tasdiqlaysizmi?";
         $textConfirm = $this->textRepository->getOrCreate('confirm_object_button', $this->userRepository->language($this->chat_id));
         $textCancel = $this->textRepository->getOrCreate('cancel_object_button', $this->userRepository->language($this->chat_id));
         $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
@@ -541,15 +534,11 @@ class TelegramService
         $this->showMainPage();
     }
 
-    public function confirmObjectButton($object_id = null): void
+    public function confirmObjectButton(): void
     {
-        if ($object_id) {
-            $object = (new Objects)->find($object_id);
-        } else {
-            $object = $this->objectRepository->getLatestObject($this->chat_id);
-        }
-        $branch = $this->objectRepository->getLatestBranch($object->id);
-        $this->sendAll($branch->id, (bool)$object_id);
+        $branch_id = $this->userRepository->branch($this->chat_id);
+        $branch = Branch::find($branch_id);
+        $this->sendAll($branch->id);
         $text = $this->textRepository->getOrCreate('success_confirm_object_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMainPage();
@@ -618,10 +607,10 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
-    public function showBranches($object_id): void
+    public function showBranches(): void
     {
+        $object_id = $this->userRepository->object($this->chat_id);
         $branches = Branch::where('objects_id', $object_id)->get();
-
         $text = $this->textRepository->getOrCreate('all_branches_text', $this->userRepository->language($this->chat_id));
         foreach ($branches as $branch) {
             $buttonText = $branch->name;
@@ -646,8 +635,9 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
-    public function showTasks($branch_id): void
+    public function showTasks(): void
     {
+        $branch_id = $this->userRepository->branch($this->chat_id);
         $tasks = Task::where('branch_id', $branch_id)->get();
 
         $text = $this->textRepository->getOrCreate('all_tasks_text', $this->userRepository->language($this->chat_id));
@@ -672,8 +662,9 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
-    public function showMaterials($task_id): void
+    public function showMaterials(): void
     {
+        $task_id = $this->userRepository->task($this->chat_id);
         $materials = Material::where('task_id', $task_id)->get();
 
         $text = $this->textRepository->getOrCreate('all_materials_text', $this->userRepository->language($this->chat_id));
@@ -756,13 +747,13 @@ class TelegramService
         }
     }
 
-    private function sendAll($branch_id, $is_object_old): void
+    private function sendAll($branch_id): void
     {
         $users = User::where('role', 'employee')->where('status', 'active')->get();
         $branch = Branch::find($branch_id);
         $object = (new Objects)->find($branch->objects_id);
         foreach ($users as $user) {
-            $prefix = $is_object_old ? "<strong>New Filial for Existing Object</strong>" : "<strong>New Object and Filial</strong>";
+            $prefix = "<strong>Yangi Filial Qo'shildi!!!</strong>";
             $text = "$prefix\n\nObject name: $object->name\n\nFilial name: $branch->name\nFilial address: $branch->address";
             $this->telegram->sendMessage(['chat_id' => $user->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         }
