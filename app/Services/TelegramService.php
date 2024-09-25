@@ -224,32 +224,24 @@ class TelegramService
                     $this->askTaskImage();
                     break;
                 case TelegramHelper::ASK_TASK_IMAGE:
-                    $photoArray = $this->telegram->getUpdateType();
-                    $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "⏳ Kutib turing, rasmlar qayta ishlanmoqda..."]);
-                    if ($photoArray) {
-                        $startTime = time();
-                        $processPhotoIDs = [];
-                        while ((time() - $startTime) < 5) {
-                            if ($photoArray) {
-                                $photo = end($photoArray);
-                                $fileId = $photo['file_id'];
-                                if (!in_array($fileId, $processPhotoIDs)) {
-                                    $processPhotoIDs[] = $fileId;
-                                    $file = $this->telegram->getFile($fileId);
-                                    $filePath = $file['result']['file_path'] ?? null;
-                                    if ($filePath) {
-                                        $this->saveImage($filePath, $fileId);
-                                    }
-                                }
-                            }
-                            usleep(500000); // 0.5 soniya kutish
-                            $photoArray = $this->telegram->getUpdateType();
-                        }
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
+                    if ($keyword == 'ready_task_button') {
                         $this->confirmTask();
-                    } else {
-                        $this->askTaskImage();
+                    } else{
+                        $photoArray = $this->telegram->getUpdateType();
+                        if ($photoArray) {
+                            $text = $this->textRepository->getOrCreate('ask_again_task_photo_or_click_ready', $this->userRepository->language($this->chat_id));
+                            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+                            $photo = end($photoArray);
+                            $fileId = $photo['file_id'];
+                            $file = $this->telegram->getFile($fileId);
+                            $filePath = $file['result']['file_path'] ?? null;
+                            if ($filePath) {
+                                $this->saveImage($filePath, $fileId);
+                            }
+                        }
                     }
-
+                    $this->askTaskImage(true);
                     break;
                 case TelegramHelper::CONFIRM_OBJECT:
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
@@ -414,12 +406,19 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
 
-    public function askTaskImage(): void
+    public function askTaskImage($button=false): void
     {
         $text = $this->textRepository->getOrCreate('ask_task_image_text', $this->userRepository->language($this->chat_id));
         $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_IMAGE);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+        if ($button) {
+            $readyTask = $this->textRepository->getOrCreate('ready_task_button', $this->userRepository->language($this->chat_id));
+            $option = [[$this->telegram->buildKeyboardButton($readyTask)]];
+            $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text,'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+        } else {
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+        }
     }
 
     public function askMaterialName(): void

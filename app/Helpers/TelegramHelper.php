@@ -8,7 +8,7 @@ class TelegramHelper
 {
     const UZBEK_LANGUAGE = 'O\'zbek tili',
           RUSSIAN_LANGUAGE = 'Русский язык',
-          ENGLISH_LANGUAGE = 'English language',
+          ENGLISH_LANGUAGE = 'Ўзбекча (кирилл)',
           START_STEP = 'start',
           PHONE_STEP = 'askPhone',
           MAIN_PAGE_STEP = 'main',
@@ -33,7 +33,7 @@ class TelegramHelper
           CONFIRM_OBJECT = 'confirm_object',
           CONFIRM_TASK = 'confirm_task',
           CONFIRM_MATERIAL = 'confirm_material',
-          CHOOSE_LANGUAGE_TEXT = "Muloqot uchun tilni tanlang\n\nВыберите язык для общения\n\nSelect language";
+          CHOOSE_LANGUAGE_TEXT = "Muloqot uchun tilni tanlang\n\nВыберите язык для общения\n\nМулоқот учун тилни танланг";
 
     public static function checkPhone($phone): bool|string
     {
