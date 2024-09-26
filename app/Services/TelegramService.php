@@ -14,6 +14,7 @@ use App\Repositories\ObjectRepository;
 use App\Repositories\TelegramTextRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\Storage;
+use function PHPUnit\Framework\isFalse;
 
 class TelegramService
 {
@@ -213,7 +214,7 @@ class TelegramService
                     break;
                 case TelegramHelper::ASK_MATERIAL_QUANTITY:
                     $this->objectRepository->updateMaterial(['quantity' => $this->text], $this->userRepository->material($this->chat_id));
-                    $this->confirmTask();
+                    $this->confirmMaterial();
                     break;
                 case TelegramHelper::ASK_TASK_DESCRIPTION:
                     $this->objectRepository->updateTask(['description' => $this->text], $this->userRepository->task($this->chat_id));
@@ -535,7 +536,9 @@ class TelegramService
     {
         $task_id = $this->userRepository->task($this->chat_id);
         $task = (new Task)->find($task_id);
-        $text = "Task name: $task->name\n\nTask Quantity: $task->quantity\n\nTask Description: $task->description";
+        $price = $task->price_for_work;
+        $price_text = $price ?? "(The price for the service is fixed in advance)";
+        $text = "Task name: $task->name\n\nTask Quantity: $task->quantity\n\nTask Description: $task->description\n\nTask Price For Service: $price_text";
         $textConfirm = $this->textRepository->getOrCreate('confirm_task_button', $this->userRepository->language($this->chat_id));
         $textCancel = $this->textRepository->getOrCreate('cancel_task_button', $this->userRepository->language($this->chat_id));
         $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
@@ -550,7 +553,7 @@ class TelegramService
         $material_id = $this->userRepository->material($this->chat_id);
         $material = Material::find($material_id);
         $task = (new Task)->find($material->task_id);
-        $text = "Task name: $task->name\n\n Material: $material->name\nMaterial Quantity: $material->quantity $material->quantity_type\nPrice for 1 $material->quantity_type: $material->price_for_type\nPrice For Work: $material->price_for_work";
+        $text = "Task name: $task->name\n\nMaterial: $material->name\nMaterial Quantity: $material->quantity $material->quantity_type";
         $textConfirm = $this->textRepository->getOrCreate('confirm_material_button', $this->userRepository->language($this->chat_id));
         $textCancel = $this->textRepository->getOrCreate('cancel_material_button', $this->userRepository->language($this->chat_id));
         $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
