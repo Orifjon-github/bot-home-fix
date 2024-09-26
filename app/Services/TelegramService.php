@@ -220,7 +220,10 @@ class TelegramService
                     $this->askTaskPriceForWork();
                     break;
                 case TelegramHelper::ASK_TASK_PRICE_FOR_WORK:
-                    $this->objectRepository->updateTask(['price_for_work' => $this->text], $this->userRepository->task($this->chat_id));
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
+                    if ($keyword != 'next_button') {
+                        $this->objectRepository->updateTask(['price_for_work' => $this->text], $this->userRepository->task($this->chat_id));
+                    }
                     $this->askTaskImage();
                     break;
                 case TelegramHelper::ASK_TASK_IMAGE:
@@ -420,8 +423,11 @@ class TelegramService
     {
         $text = $this->textRepository->getOrCreate('ask_task_price_for_work_text', $this->userRepository->language($this->chat_id));
         $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $nextButton = $this->textRepository->getOrCreate('next_button', $this->userRepository->language($this->chat_id));
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_PRICE_FOR_WORK);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+        $option = [[$this->telegram->buildKeyboardButton($nextButton)]];
+        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $nextButton, 'parse_mode' => 'html']);
     }
 
     public function askTaskImage($button=false): void
