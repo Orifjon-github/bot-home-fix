@@ -418,9 +418,9 @@ class TelegramService
     }
     public function askTaskPriceForWork(): void
     {
-        $text = $this->textRepository->getOrCreate('ask_task_description_text', $this->userRepository->language($this->chat_id));
+        $text = $this->textRepository->getOrCreate('ask_task_price_for_work_text', $this->userRepository->language($this->chat_id));
         $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
-        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_DESCRIPTION);
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_PRICE_FOR_WORK);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
 
