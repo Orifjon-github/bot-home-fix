@@ -7,6 +7,7 @@ use App\Helpers\TelegramHelper;
 use App\Models\Branch;
 use App\Models\Material;
 use App\Models\Objects;
+use App\Models\QuantityType;
 use App\Models\Task;
 use App\Models\User;
 use App\Repositories\ObjectRepository;
@@ -448,8 +449,30 @@ class TelegramService
     {
         $text = $this->textRepository->getOrCreate('ask_material_quantity_type_text', $this->userRepository->language($this->chat_id));
         $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $types = QuantityType::all();
+        $option = [];
+        foreach ($types as $type) {
+            $lang = $this->userRepository->language($this->chat_id);
+            switch ($lang) {
+                case 'uz':
+                    $buttonText = $type->name;
+                    break;
+                default:
+                    $name = 'name_' . $lang;
+                    $buttonText = $type->$name;
+            }
+            $temp[] = $this->telegram->buildKeyboardButton($buttonText);
+            if (count($temp) === 3) {
+                $option[] = $temp;
+                $temp = [];
+            }
+        }
+        if (!empty($temp)) {
+            $option[] = $temp;
+        }
+        $keyboard = $this->telegram->buildKeyBoard($option, true, true);
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_QUANTITY_TYPE);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard ,'parse_mode' => 'html']);
     }
 
     public function askMaterialQuantity(): void
