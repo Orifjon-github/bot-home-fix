@@ -427,7 +427,7 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_PRICE_FOR_WORK);
         $option = [[$this->telegram->buildKeyboardButton($nextButton)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $nextButton, 'parse_mode' => 'html']);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
     public function askTaskImage($button=false): void
