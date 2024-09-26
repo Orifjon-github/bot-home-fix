@@ -213,18 +213,14 @@ class TelegramService
                     break;
                 case TelegramHelper::ASK_MATERIAL_QUANTITY:
                     $this->objectRepository->updateMaterial(['quantity' => $this->text], $this->userRepository->material($this->chat_id));
-                    $this->askMaterialPriceForQuantityType();
-                    break;
-                case TelegramHelper::ASK_MATERIAL_PRICE_FOR_TYPE:
-                    $this->objectRepository->updateMaterial(['price_for_type' => $this->text], $this->userRepository->material($this->chat_id));
-                    $this->askMaterialPriceForWork();
-                    break;
-                case TelegramHelper::ASK_MATERIAL_PRICE_FOR_WORK:
-                    $this->objectRepository->updateMaterial(['price_for_work' => $this->text], $this->userRepository->material($this->chat_id));
-                    $this->confirmMaterial();
+                    $this->confirmTask();
                     break;
                 case TelegramHelper::ASK_TASK_DESCRIPTION:
                     $this->objectRepository->updateTask(['description' => $this->text], $this->userRepository->task($this->chat_id));
+                    $this->askTaskPriceForWork();
+                    break;
+                case TelegramHelper::ASK_TASK_PRICE_FOR_WORK:
+                    $this->objectRepository->updateTask(['price_for_work' => $this->text], $this->userRepository->task($this->chat_id));
                     $this->askTaskImage();
                     break;
                 case TelegramHelper::ASK_TASK_IMAGE:
@@ -414,6 +410,13 @@ class TelegramService
     }
 
     public function askTaskDescription(): void
+    {
+        $text = $this->textRepository->getOrCreate('ask_task_description_text', $this->userRepository->language($this->chat_id));
+        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_DESCRIPTION);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+    }
+    public function askTaskPriceForWork(): void
     {
         $text = $this->textRepository->getOrCreate('ask_task_description_text', $this->userRepository->language($this->chat_id));
         $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
