@@ -13,7 +13,12 @@ use App\Models\User;
 use App\Repositories\ObjectRepository;
 use App\Repositories\TelegramTextRepository;
 use App\Repositories\UserRepository;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use function PHPUnit\Framework\isFalse;
 
 class TelegramService
@@ -134,7 +139,7 @@ class TelegramService
                             } else {
                                 $this->userRepository->branch($this->chat_id, $branch->id);
                                 if ($this->userRepository->role($this->chat_id) == 'manager') {
-                                    $this->technicalWork();
+                                    $this->generateExcel($branch->id);
                                 } else {
                                     $this->showTasks();
                                 }
@@ -816,4 +821,78 @@ class TelegramService
         $task = (new Task)->find($this->userRepository->task($this->chat_id));
         $task->images()->create(['image' => $path]);
     }
+
+    public function generateExcel($branch_id)
+    {
+        $branch = Branch::with('object', 'tasks', 'tasks.images', 'tasks.materials')->findOrFail($branch_id);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // 1. Bosh ma'lumotlarni qo'shish
+        // Название компании - Объектнинг номи
+        $sheet->setCellValue('A1', 'Название компании: ' . $branch->object->name);
+        // Адрес - Branch ning manzili
+        $sheet->setCellValue('A2', 'Адрес: ' . $branch->address);
+        // Цель осмотра va Общие сведения об осмотре hozircha bo'sh
+        $sheet->setCellValue('A3', 'Цель осмотра: ');
+        $sheet->setCellValue('A4', 'Общие сведения об осмотре: ');
+
+        // 2. Tasklarni ko'rib chiqish va qo'shish
+        $sheet->setCellValue('A6', 'Детали осмотра');
+        $sheet->setCellValue('A7', '№');
+        $sheet->setCellValue('B7', 'Наименование');
+        $sheet->setCellValue('C7', 'кол-во');
+        $sheet->setCellValue('D7', 'Описание');
+
+        $row = 8; // Tasklar boshlanadigan qator
+
+        foreach ($branch->tasks as $index => $task) {
+            // № - tartib raqami
+            $sheet->setCellValue('A' . $row, $index + 1);
+            // Наименование - task nomi
+            $sheet->setCellValue('B' . $row, $task->name);
+            // кол-во - task quantity
+            $sheet->setCellValue('C' . $row, $task->quantity);
+            // Описание - task description
+            $sheet->setCellValue('D' . $row, $task->description);
+
+            // Task bilan bog'liq rasm(lar)ni joylash
+            foreach ($task->images as $image) {
+                $drawing = new Drawing();
+                $drawing->setPath(storage_path('app/public/task-images' . $image->image)); // Rasmlar public folderda saqlanadi
+                $drawing->setCoordinates('E' . $row); // Rasmni joylash
+                $drawing->setWorksheet($sheet);
+                $row++;
+            }
+
+            // Task bilan bog'liq materiallarni ko'rib chiqish
+            foreach ($task->materials as $material) {
+                $sheet->setCellValue('B' . $row, $material->name); // Описание
+                $sheet->setCellValue('C' . $row, $material->quantity_type); // ед.изм
+                $sheet->setCellValue('D' . $row, $material->quantity); // кол-во
+                $row++;
+            }
+
+            $row++; // Tasklar orasidagi bo'sh qator
+        }
+
+        // 3. Faylni saqlash
+        $fileName = 'branch_report_' . $branch->name . '_' . Carbon::now()->format('Y-m-d H-i') . '.xlsx';
+        $filePath = storage_path('app/public/reports' . $fileName);
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($filePath);
+        $user = User::where('chat_id', $this->chat_id)->first();
+        // 4. Fayl ma'lumotlarini bazaga yozish
+        DB::table('generated_reports')->insert([
+            'user_id' => $user->id,
+            'branch_id' => $branch->id,
+            'file_path' => $filePath,
+        ]);
+
+        $this->telegram->sendDocument(['chat_id' => $this->chat_id, curl_file_create($filePath)]);
+
+        return response()->download($filePath);
+    }
+
 }
