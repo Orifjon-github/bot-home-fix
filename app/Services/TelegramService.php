@@ -120,7 +120,7 @@ class TelegramService
                         $object = Objects::where('name', $this->text)->first();
                         if (!$object) $this->showObjects();
                         $this->userRepository->object($this->chat_id, $object->id);
-                        $this->showBranches($object->id);
+                        $this->showBranches();
                     }
                     break;
                 case TelegramHelper::ALL_BRANCHES:
@@ -181,7 +181,7 @@ class TelegramService
                             $material = Material::where('name', $this->text)->first();
                             if (!$material) $this->showMaterials();
                             $this->userRepository->material($this->chat_id, $material->id);
-                            $this->technicalWork();
+                            $this->showMaterialInfo();
                             break;
                     }
                     break;
@@ -204,22 +204,9 @@ class TelegramService
                     $this->userRepository->task($this->chat_id, $task->id);
                     $this->askTaskQuantity();
                     break;
-                case TelegramHelper::ASK_MATERIAL_NAME:
-                    $material = $this->objectRepository->createMaterial($this->text, $this->userRepository->task($this->chat_id));
-                    $this->userRepository->material($this->chat_id, $material->id);
-                    $this->askMaterialQuantityType();
-                    break;
                 case TelegramHelper::ASK_TASK_QUANTITY:
                     $this->objectRepository->updateTask(['quantity' => $this->text], $this->userRepository->task($this->chat_id));
                     $this->askTaskDescription();
-                    break;
-                case TelegramHelper::ASK_MATERIAL_QUANTITY_TYPE:
-                    $this->objectRepository->updateMaterial(['quantity_type' => $this->text], $this->userRepository->material($this->chat_id));
-                    $this->askMaterialQuantity();
-                    break;
-                case TelegramHelper::ASK_MATERIAL_QUANTITY:
-                    $this->objectRepository->updateMaterial(['quantity' => $this->text], $this->userRepository->material($this->chat_id));
-                    $this->confirmMaterial();
                     break;
                 case TelegramHelper::ASK_TASK_DESCRIPTION:
                     $this->objectRepository->updateTask(['description' => $this->text], $this->userRepository->task($this->chat_id));
@@ -249,6 +236,31 @@ class TelegramService
                         }
                         $this->askTaskImage(true);
                     }
+                    break;
+                case TelegramHelper::ASK_MATERIAL_NAME:
+                    $material = $this->objectRepository->createMaterial($this->text, $this->userRepository->task($this->chat_id));
+                    $this->userRepository->material($this->chat_id, $material->id);
+                    $this->askMaterialQuantityType();
+                    break;
+                case TelegramHelper::ASK_MATERIAL_QUANTITY_TYPE:
+                    $this->objectRepository->updateMaterial(['quantity_type' => $this->text], $this->userRepository->material($this->chat_id));
+                    $this->askMaterialQuantity();
+                    break;
+                case TelegramHelper::ASK_MATERIAL_QUANTITY:
+                    $this->objectRepository->updateMaterial(['quantity' => $this->text], $this->userRepository->material($this->chat_id));
+                    $this->confirmMaterial();
+                    break;
+                case TelegramHelper::ADD_MATERIAL_PRICE:
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
+                    if ($keyword == 'add_material_price_button') {
+                        $this->askMaterialPriceForQuantityType();
+                    } else {
+                        $this->showMaterials();
+                    }
+                    break;
+                case TelegramHelper::ASK_MATERIAL_PRICE_FOR_TYPE:
+                    $this->objectRepository->updateMaterial(['price_for_type' => $this->text], $this->userRepository->material($this->chat_id));
+                    $this->showMaterials();
                     break;
                 case TelegramHelper::CONFIRM_OBJECT:
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
@@ -361,15 +373,15 @@ class TelegramService
         $role = $this->userRepository->role($this->chat_id);
         $text = $this->textRepository->getOrCreate('main_page_text', $this->userRepository->language($this->chat_id));
         $textButton_3 = $this->textRepository->getOrCreate('my_works_button', $this->userRepository->language($this->chat_id));
+        $textButton_2 = $this->textRepository->getOrCreate('all_objects_button', $this->userRepository->language($this->chat_id));
         switch ($role) {
             case 'manager':
                 $textButton_1 = $this->textRepository->getOrCreate('add_object_button', $this->userRepository->language($this->chat_id));
-                $textButton_2 = $this->textRepository->getOrCreate('all_objects_button', $this->userRepository->language($this->chat_id));
                 $option = [[$this->telegram->buildKeyboardButton($textButton_1)], [$this->telegram->buildKeyboardButton($textButton_2)], [$this->telegram->buildKeyboardButton($textButton_3)]];
                 break;
             case 'employee':
-                $textButton_4 = $this->textRepository->getOrCreate('all_objects_button', $this->userRepository->language($this->chat_id));
-                $option = [[$this->telegram->buildKeyboardButton($textButton_4)], [$this->telegram->buildKeyboardButton($textButton_3)]];
+            case 'warehouse':
+                $option = [[$this->telegram->buildKeyboardButton($textButton_2)], [$this->telegram->buildKeyboardButton($textButton_3)]];
                 break;
             default:
                 $textWait = $this->textRepository->getOrCreate('wait_for_role_text', $this->userRepository->language($this->chat_id));
@@ -699,7 +711,9 @@ class TelegramService
             $option[] = $temp;
         }
         $textButtonAdd = $this->textRepository->getOrCreate('add_task_button', $this->userRepository->language($this->chat_id));
-        array_unshift($option, [$this->telegram->buildKeyboardButton($textButtonAdd)]);
+        if ($this->userRepository->role($this->chat_id) == 'employee') {
+            array_unshift($option, [$this->telegram->buildKeyboardButton($textButtonAdd)]);
+        }
         $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
         $keyboard = $this->telegram->buildKeyBoard($option, true, true);
@@ -734,9 +748,11 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ALL_MATERIALS);
         $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
         $textButtonAdd = $this->textRepository->getOrCreate('add_material_button', $this->userRepository->language($this->chat_id));
-        array_unshift($option, [$this->telegram->buildKeyboardButton($textButtonAdd)]);
+        if ($this->userRepository->role($this->chat_id) == 'employee') {
+            array_unshift($option, [$this->telegram->buildKeyboardButton($textButtonAdd)]);
+        }
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
-        $keyboard = $this->telegram->buildKeyBoard($option, true, true);
+        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
@@ -750,6 +766,23 @@ class TelegramService
         $option = [[$this->telegram->buildKeyboardButton($textButtonChangeLang), $this->telegram->buildKeyboardButton($textButtonDelete)], [$this->telegram->buildKeyboardButton($textButtonMain)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+    }
+    public function showMaterialInfo(): void
+    {
+        $material = Material::find($this->userRepository->material($this->chat_id));
+        $task = $material->task;
+        $price = $material->price_for_type ?? '(Narx kiritilmagan)';
+        $text = "Muammo: $task->name\nMuammo haqida: $task->description\n\nZapchast: $material->name\nO'lchovi: $material->quantity_type\nMiqdori: $material->quantity\n$material->quantity_type uchun narx: $price";
+        if ($this->userRepository->role($this->chat_id) == 'warehouse' && empty($material->price_for_type)) {
+            $textAddPrice = $this->textRepository->getOrCreate('add_material_price_button', $this->userRepository->language($this->chat_id));
+            $textBackButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+            $option = [[$this->telegram->buildKeyboardButton($textBackButton), $this->telegram->buildKeyboardButton($textAddPrice)]];
+            $this->userRepository->page($this->chat_id, TelegramHelper::ADD_MATERIAL_PRICE);
+            $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+        } else {
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+        }
     }
 
     public function successChangeLang(): void

@@ -35,6 +35,7 @@ class TelegramHelper
           CONFIRM_OBJECT = 'confirm_object',
           CONFIRM_TASK = 'confirm_task',
           CONFIRM_MATERIAL = 'confirm_material',
+          ADD_MATERIAL_PRICE = 'add_material_price',
           CHOOSE_LANGUAGE_TEXT = "Muloqot uchun tilni tanlang\n\nВыберите язык для общения\n\nМулоқот учун тилни танланг";
 
     public static function checkPhone($phone): bool|string
