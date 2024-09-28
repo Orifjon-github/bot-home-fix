@@ -14,8 +14,10 @@ use App\Repositories\ObjectRepository;
 use App\Repositories\TelegramTextRepository;
 use App\Repositories\UserRepository;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Exception;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -855,6 +857,11 @@ class TelegramService
         $task->images()->create(['image' => $path]);
     }
 
+    /**
+     * @throws ModelNotFoundException
+     * @throws Exception
+     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
+     */
     public function generateExcel($branch_id)
     {
         $branch = Branch::with('object', 'tasks', 'tasks.images', 'tasks.materials')->findOrFail($branch_id);
@@ -862,9 +869,12 @@ class TelegramService
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        // 1. Bosh ma'lumotlarni qo'shish
+        $sheet->mergeCells('C1:L1');
         // Название компании - Объектнинг номи
-        $sheet->setCellValue('A1', 'Название компании: ' . $branch->object->name);
+        $sheet->setCellValue('B1', 'Название компании');
+        $sheet->setCellValue('C1', $branch->object->name);
+        $sheet->getStyle('C1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('C1')->getAlignment()->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
         // Адрес - Branch ning manzili
         $sheet->setCellValue('A2', 'Адрес: ' . $branch->address);
         // Цель осмотра va Общие сведения об осмотре hozircha bo'sh
@@ -912,7 +922,7 @@ class TelegramService
 
         // 3. Faylni saqlash
         $fileName = 'branch_report_' . $branch->name . '_' . Carbon::now()->format('Y-m-d H-i') . '.xlsx';
-        $filePath = storage_path('app/public/reports' . $fileName);
+        $filePath = storage_path('app/public/reports/' . $fileName);
         $writer = new Xlsx($spreadsheet);
         $writer->save($filePath);
         $user = User::where('chat_id', $this->chat_id)->first();
