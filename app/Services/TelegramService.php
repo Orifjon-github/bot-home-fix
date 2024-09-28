@@ -893,7 +893,7 @@ class TelegramService
             // Task bilan bog'liq rasm(lar)ni joylash
             foreach ($task->images as $image) {
                 $drawing = new Drawing();
-                $drawing->setPath(storage_path('app/public/task-images' . $image->image)); // Rasmlar public folderda saqlanadi
+                $drawing->setPath(storage_path('app/public/' . $image->image)); // Rasmlar public folderda saqlanadi
                 $drawing->setCoordinates('E' . $row); // Rasmni joylash
                 $drawing->setWorksheet($sheet);
                 $row++;
