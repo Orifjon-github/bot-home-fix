@@ -16,6 +16,7 @@ use App\Repositories\UserRepository;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Exception;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -862,80 +863,113 @@ class TelegramService
      * @throws Exception
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
      */
-    public function generateExcel($branch_id)
-    {
-        $branch = Branch::with('object', 'tasks', 'tasks.images', 'tasks.materials')->findOrFail($branch_id);
 
+
+    public function generateExcel()
+    {
+        // Yangi Excel fayl yaratish
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $sheet->mergeCells('C1:L1');
-        // Название компании - Объектнинг номи
-        $sheet->setCellValue('B1', 'Название компании');
-        $sheet->setCellValue('C1', $branch->object->name);
-        $sheet->getStyle('C1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-        $sheet->getStyle('C1')->getAlignment()->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER);
-        // Адрес - Branch ning manzili
-        $sheet->setCellValue('A2', 'Адрес: ' . $branch->address);
-        // Цель осмотра va Общие сведения об осмотре hozircha bo'sh
-        $sheet->setCellValue('A3', 'Цель осмотра: ');
-        $sheet->setCellValue('A4', 'Общие сведения об осмотре: ');
+        // Excel kataklariga real ma'lumotlarni yozish
+        $sheet->setCellValue('A1', 'Название компании');
+        $sheet->setCellValue('B1', 'Coffee Issimo');
 
-        // 2. Tasklarni ko'rib chiqish va qo'shish
-        $sheet->setCellValue('A6', 'Детали осмотра');
-        $sheet->setCellValue('A7', '№');
-        $sheet->setCellValue('B7', 'Наименование');
-        $sheet->setCellValue('C7', 'кол-во');
-        $sheet->setCellValue('D7', 'Описание');
+        $sheet->setCellValue('A2', 'Адрес');
+        $sheet->setCellValue('B2', 'Talabalar');
 
-        $row = 8; // Tasklar boshlanadigan qator
+        $sheet->setCellValue('A3', 'Цель осмотра');
+        $sheet->setCellValue('B3', 'Полный осмотр и диагностика электропроводки выдвижного зонта');
 
-        foreach ($branch->tasks as $index => $task) {
-            // № - tartib raqami
-            $sheet->setCellValue('A' . $row, $index + 1);
-            // Наименование - task nomi
-            $sheet->setCellValue('B' . $row, $task->name);
-            // кол-во - task quantity
-            $sheet->setCellValue('C' . $row, $task->quantity);
-            // Описание - task description
-            $sheet->setCellValue('D' . $row, $task->description);
+        $sheet->setCellValue('A4', 'Общие сведения об осмотре:');
+        $sheet->setCellValue('B4', 'Осмотрели проводку. Лед лампы');
 
-            // Task bilan bog'liq rasm(lar)ni joylash
-            foreach ($task->images as $image) {
-                $drawing = new Drawing();
-                $drawing->setPath(storage_path('app/public/' . $image->image)); // Rasmlar public folderda saqlanadi
-                $drawing->setCoordinates('E' . $row); // Rasmni joylash
-                $drawing->setWorksheet($sheet);
-                $row++;
-            }
+        // Jadvaldagi sarlavhalar
+        $sheet->setCellValue('A6', '№');
+        $sheet->setCellValue('B6', 'Наименование');
+        $sheet->setCellValue('C6', 'кол-во');
+        $sheet->setCellValue('D6', 'Фото');
+        $sheet->setCellValue('E6', 'Описание');
+        $sheet->setCellValue('F6', 'время выполнения');
+        $sheet->setCellValue('G6', 'расходный материал');
+        $sheet->setCellValue('H6', 'ед-изм');
+        $sheet->setCellValue('I6', 'кол-во');
+        $sheet->setCellValue('J6', 'цена');
+        $sheet->setCellValue('K6', 'сумма');
+        $sheet->setCellValue('L6', 'Оплата за работу');
+        $sheet->setCellValue('M6', 'Итого');
 
-            // Task bilan bog'liq materiallarni ko'rib chiqish
-            foreach ($task->materials as $material) {
-                $sheet->setCellValue('B' . $row, $material->name); // Описание
-                $sheet->setCellValue('C' . $row, $material->quantity_type); // ед.изм
-                $sheet->setCellValue('D' . $row, $material->quantity); // кол-во
-                $row++;
-            }
+        // Mahsulotlar ro'yxati va ularning tafsilotlarini yozish
+        $this->insertProductRow($sheet, 7, 1, 'Led светильник', 16, 'storage/images/picture-1.jpg', 'Заменить. (Окисление в контактах. Пластмассовые детали утеряли прочность от перепада температуры)', 'Led 24v', 'п.м', 3.2, 47040, 150528, 78400, 1404928);
+        $this->insertProductRow($sheet, 8, 2, 'Led светильник', 12, 'storage/images/picture-2.jpg', 'Неисправность. Замена.', 'Led 24v', 'п.м', 2.4, 47040, 112896, 78400, 1053696);
+        $this->insertProductRow($sheet, 9, 3, 'Проводка между лампами', 35, 'storage/images/picture-3.jpg', 'Окисление. Обрыв.  Замена.', 'Провод 2*2,5 (Морозостойкий)', 'п.м', 40, 28560, 1142400, 78400, 3886400);
+        $this->insertProductRow($sheet, 10, 4, 'Основной провод питания', 8, 'storage/images/picture-4.jpg', 'Обрыв в сети. Нужно заменить.', 'Провод 2*2,5 (Морозостойкий)', 'п.м', 10, 28560, 285600, 78400, 912800);
 
-            $row++; // Tasklar orasidagi bo'sh qator
-        }
+        // Yakuniy summa yozish
+        $sheet->setCellValue('M11', 'Итого');
+        $sheet->setCellValue('N11', '7 257 824');
 
-        // 3. Faylni saqlash
-        $fileName = 'branch_report_' . $branch->name . '_' . Carbon::now()->format('Y-m-d H-i') . '.xlsx';
+        // Faylni saqlash
+        $fileName = 'Coffee_Issimo_' . time() . '.xlsx';
         $filePath = storage_path('app/public/reports/' . $fileName);
+
+        // Papka yo'q bo'lsa, yaratish
+        Storage::makeDirectory('public/reports');
+
         $writer = new Xlsx($spreadsheet);
         $writer->save($filePath);
-        $user = User::where('chat_id', $this->chat_id)->first();
-        // 4. Fayl ma'lumotlarini bazaga yozish
-        DB::table('generated_reports')->insert([
-            'user_id' => $user->id,
-            'branch_id' => $branch->id,
-            'file_path' => $filePath,
-        ]);
 
-        $this->telegram->sendDocument(['chat_id' => $this->chat_id, curl_file_create($filePath)]);
-
-        return response()->download($filePath);
+        // Faylni Telegram orqali jo'natish
+        $this->sendToTelegram($filePath);
     }
 
+    // Mahsulotni kiritish va rasmni joylash
+    private function insertProductRow($sheet, $row, $number, $name, $quantity, $imagePath, $description, $material, $unit, $unitQty, $price, $totalPrice, $workPayment, $finalTotal): void
+    {
+        $sheet->setCellValue('A' . $row, $number);
+        $sheet->setCellValue('B' . $row, $name);
+        $sheet->setCellValue('C' . $row, $quantity);
+
+        // Rasmni qo'shish
+        if (file_exists(public_path($imagePath))) {
+            $drawing = new Drawing();
+            $drawing->setName($name);
+            $drawing->setDescription($name);
+            $drawing->setPath(public_path($imagePath)); // Rasmning yo'li
+            $drawing->setHeight(80); // Rasmni balandligini sozlash
+            $drawing->setCoordinates('D' . $row); // Rasmni joylash
+            $drawing->setWorksheet($sheet);
+        } else {
+            // Rasm topilmasa, text sifatida yo'lni yozish
+            $sheet->setCellValue('D' . $row, 'Rasm topilmadi: ' . $imagePath);
+        }
+
+        // Qolgan ma'lumotlar
+        $sheet->setCellValue('E' . $row, $description);
+        $sheet->setCellValue('F' . $row, ''); // vaqt hozir kiritilmagan
+        $sheet->setCellValue('G' . $row, $material);
+        $sheet->setCellValue('H' . $row, $unit);
+        $sheet->setCellValue('I' . $row, $unitQty);
+        $sheet->setCellValue('J' . $row, $price);
+        $sheet->setCellValue('K' . $row, $totalPrice);
+        $sheet->setCellValue('L' . $row, $workPayment);
+        $sheet->setCellValue('M' . $row, $finalTotal);
+    }
+
+    // Telegramga fayl jo'natish
+    private function sendToTelegram($filePath)
+    {
+        $chatId = '298410462'; // Telegram chat ID
+        $botToken = '7226280903:AAHBIHeD_CRMpA-OJazoU-mKAiGmdENuRtg'; // Bot token
+
+        $url = "https://api.telegram.org/bot$botToken/sendDocument";
+
+        // Faylni jo'natish
+        $response = Http::attach('document', fopen($filePath, 'r'), basename($filePath))
+            ->post($url, [
+                'chat_id' => $chatId,
+            ]);
+
+        return $response->json();
+    }
 }
