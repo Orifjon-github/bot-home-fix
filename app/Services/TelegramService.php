@@ -255,7 +255,7 @@ class TelegramService
                     break;
                 case TelegramHelper::ASK_MATERIAL_IMAGE:
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
-                    if ($keyword == 'ready_material_button') {
+                    if ($keyword == 'ready_material_button' || $keyword == 'next_button') {
                         $this->confirmMaterial();
                     } else{
                         $photoArray = $this->telegram->getUpdateType();
