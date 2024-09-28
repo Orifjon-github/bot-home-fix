@@ -23,6 +23,6 @@ class Branch extends Model
 
     public function object(): BelongsTo
     {
-        return $this->belongsTo(Objects::class);
+        return $this->belongsTo(Objects::class, 'objects_id');
     }
 }
