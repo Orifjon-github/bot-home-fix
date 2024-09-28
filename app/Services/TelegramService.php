@@ -251,7 +251,25 @@ class TelegramService
                     break;
                 case TelegramHelper::ASK_MATERIAL_QUANTITY:
                     $this->objectRepository->updateMaterial(['quantity' => $this->text], $this->userRepository->material($this->chat_id));
-                    $this->confirmMaterial();
+                    $this->askMaterialImage();
+                    break;
+                case TelegramHelper::ASK_MATERIAL_IMAGE:
+                    $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
+                    if ($keyword == 'ready_material_button') {
+                        $this->confirmMaterial();
+                    } else{
+                        $photoArray = $this->telegram->getUpdateType();
+                        if ($photoArray && is_array($photoArray)) {
+                            $photo = end($photoArray);
+                            $fileId = $photo['file_id'];
+                            $file = $this->telegram->getFile($fileId);
+                            $filePath = $file['result']['file_path'] ?? null;
+                            if ($filePath) {
+                                $this->saveImage($filePath, $fileId, 'material');
+                            }
+                        }
+                        $this->askMaterialImage(true);
+                    }
                     break;
                 case TelegramHelper::ADD_MATERIAL_PRICE:
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
@@ -511,6 +529,23 @@ class TelegramService
         $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_QUANTITY);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+    }
+    public function askMaterialImage($button=false): void
+    {
+        $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_IMAGE);
+        if ($button) {
+            $text = $this->textRepository->getOrCreate('ask_again_material_photo_or_click_ready', $this->userRepository->language($this->chat_id));
+            $readyTask = $this->textRepository->getOrCreate('ready_material_button', $this->userRepository->language($this->chat_id));
+            $option = [[$this->telegram->buildKeyboardButton($readyTask)]];
+            $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text,'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+        } else {
+            $text = $this->textRepository->getOrCreate('ask_material_image_text', $this->userRepository->language($this->chat_id));
+            $next_button = $this->textRepository->getOrCreate('next_button', $this->userRepository->language($this->chat_id));
+            $option = [[$this->telegram->buildKeyboardButton($next_button)]];
+            $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'reply_markup' => $keyboard,'text' => $text, 'parse_mode' => 'html']);
+        }
     }
 
     public function askMaterialPriceForQuantityType(): void
@@ -845,17 +880,23 @@ class TelegramService
         }
     }
 
-    private function saveImage($filePath, $file_name): void
+    private function saveImage($filePath, $file_name, $name='task'): void
     {
         $token = env('TELEGRAM_BOT_TOKEN');
         $url = "https://api.telegram.org/file/bot{$token}/{$filePath}";
         $imageContent = file_get_contents($url);
         $extension = pathinfo($filePath, PATHINFO_EXTENSION); // fayl formatini olish
-        $storagePath = "task-images/{$file_name}.{$extension}";
+        $storagePath = "$name-images/{$file_name}.{$extension}";
         Storage::disk('public')->put($storagePath, $imageContent);
         $path = str_replace('public/', '/storage/', $storagePath);
-        $task = (new Task)->find($this->userRepository->task($this->chat_id));
-        $task->images()->create(['image' => $path]);
+        if ($name == 'task') {
+            $task = (new Task)->find($this->userRepository->task($this->chat_id));
+            $task->images()->create(['image' => $path]);
+        } else {
+            $material = (new Material)->find($this->userRepository->material($this->chat_id));
+            $material->images()->create(['image' => $path]);
+        }
+
     }
 
     /**
@@ -957,10 +998,10 @@ class TelegramService
     }
 
     // Telegramga fayl jo'natish
-    private function sendToTelegram($filePath)
+    private function sendToTelegram($filePath): void
     {
-        $chatId = '298410462'; // Telegram chat ID
-        $botToken = '7226280903:AAHBIHeD_CRMpA-OJazoU-mKAiGmdENuRtg'; // Bot token
+        $chatId = $this->chat_id; // Telegram chat ID
+        $botToken = env('TELEGRAM_BOT_TOKEN'); // Bot token
 
         $url = "https://api.telegram.org/bot$botToken/sendDocument";
 
@@ -970,6 +1011,6 @@ class TelegramService
                 'chat_id' => $chatId,
             ]);
 
-        return $response->json();
+        $response->json();
     }
 }

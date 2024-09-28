@@ -31,6 +31,7 @@ class TelegramHelper
           ASK_MATERIAL_QUANTITY_TYPE = 'ask_material_quantity_type',
           ASK_MATERIAL_QUANTITY = 'ask_material_quantity',
           ASK_MATERIAL_PRICE_FOR_TYPE = 'ask_material_price_for_type',
+          ASK_MATERIAL_IMAGE = 'ask_material_image',
           ASK_MATERIAL_PRICE_FOR_WORK = 'ask_material_price_for_work',
           CONFIRM_OBJECT = 'confirm_object',
           CONFIRM_TASK = 'confirm_task',
