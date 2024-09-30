@@ -908,47 +908,59 @@ class TelegramService
 
     public function generateExcel()
     {
-        // Yangi Excel fayl yaratish
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        // Excel kataklariga real ma'lumotlarni yozish
-        $sheet->setCellValue('A1', 'Название компании');
-        $sheet->setCellValue('B1', 'Coffee Issimo');
+        // Bosh uslublarni o'rnatish (o'rtaga joylash va chegaralar)
+        $defaultStyle = [
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['argb' => '000000'],
+                ],
+            ],
+        ];
 
-        $sheet->setCellValue('A2', 'Адрес');
-        $sheet->setCellValue('B2', 'Talabalar');
+        // Kompaniya nomi va adres qismi
+        $sheet->mergeCells('A1:B1');
+        $sheet->setCellValue('A1', 'Название компании:');
+        $sheet->setCellValue('C1', 'Coffee Issimo');
+        $sheet->mergeCells('A2:B2');
+        $sheet->setCellValue('A2', 'Адрес:');
+        $sheet->setCellValue('C2', 'Talabalar');
 
-        $sheet->setCellValue('A3', 'Цель осмотра');
-        $sheet->setCellValue('B3', 'Полный осмотр и диагностика электропроводки выдвижного зонта');
+        // Цель осмотра qismi
+        $sheet->mergeCells('A3:C3');
+        $sheet->setCellValue('A3', 'Цель осмотра:');
+        $sheet->mergeCells('D3:G3');
+        $sheet->setCellValue('D3', 'Полный осмотр и диагностика электропроводки выдвижного зонта');
 
-        $sheet->setCellValue('A4', 'Общие сведения об осмотре:');
-        $sheet->setCellValue('B4', 'Осмотрели проводку. Лед лампы');
+        // Общие сведения об осмотре
+        $sheet->mergeCells('A4:G4');
+        $sheet->setCellValue('A4', 'Общие сведения об осмотре: Осмотрели проводку. Лед лампы');
 
-        // Jadvaldagi sarlavhalar
-        $sheet->setCellValue('A6', '№');
-        $sheet->setCellValue('B6', 'Наименование');
-        $sheet->setCellValue('C6', 'кол-во');
-        $sheet->setCellValue('D6', 'Фото');
-        $sheet->setCellValue('E6', 'Описание');
-        $sheet->setCellValue('F6', 'время выполнения');
-        $sheet->setCellValue('G6', 'расходный материал');
-        $sheet->setCellValue('H6', 'ед-изм');
-        $sheet->setCellValue('I6', 'кол-во');
-        $sheet->setCellValue('J6', 'цена');
-        $sheet->setCellValue('K6', 'сумма');
-        $sheet->setCellValue('L6', 'Оплата за работу');
-        $sheet->setCellValue('M6', 'Итого');
+        // Jadval sarlavhalari
+        $sheet->fromArray([
+            ['№', 'Наименование', 'кол-во', 'Фото', 'Описание', 'время выполнения', 'расходный материал', 'ед-изм', 'кол-во', 'цена', 'сумма', 'Оплата за работу', 'Итого']
+        ], null, 'A6');
 
-        // Mahsulotlar ro'yxati va ularning tafsilotlarini yozish
-        $this->insertProductRow($sheet, 7, 1, 'Led светильник', 16, 'storage/images/picture-1.jpg', 'Заменить. (Окисление в контактах. Пластмассовые детали утеряли прочность от перепада температуры)', 'Led 24v', 'п.м', 3.2, 47040, 150528, 78400, 1404928);
+        // Mahsulotlar ro'yxatini joylash
+        $this->insertProductRow($sheet, 7, 1, 'Led светильник', 16, 'storage/material-images/AgACAgIAAxkBAAIIhmb4LvmyrFpCdy17bsBrbWu4RK2vAAIr4zEbRUuxSyUkgjspD0KiAQADAgADeQADNgQ.jpg', 'Заменить. (Окисление в контактах. Пластмассовые детали утеряли прочность от перепада температуры)', 'Led 24v', 'п.м', 3.2, 47040, 150528, 78400, 1404928);
         $this->insertProductRow($sheet, 8, 2, 'Led светильник', 12, 'storage/images/picture-2.jpg', 'Неисправность. Замена.', 'Led 24v', 'п.м', 2.4, 47040, 112896, 78400, 1053696);
-        $this->insertProductRow($sheet, 9, 3, 'Проводка между лампами', 35, 'storage/images/picture-3.jpg', 'Окисление. Обрыв.  Замена.', 'Провод 2*2,5 (Морозостойкий)', 'п.м', 40, 28560, 1142400, 78400, 3886400);
-        $this->insertProductRow($sheet, 10, 4, 'Основной провод питания', 8, 'storage/images/picture-4.jpg', 'Обрыв в сети. Нужно заменить.', 'Провод 2*2,5 (Морозостойкий)', 'п.м', 10, 28560, 285600, 78400, 912800);
+        $this->insertProductRow($sheet, 9, 3, 'Проводка между лампами', 35, 'storage/images/picture-3.jpg', 'Окисление. Обрыв. Замена.', 'Провод 2*2,5 (Морозостойкий)', 'п.м', 40, 28560, 1142400, 78400, 3886400);
+        $this->insertProductRow($sheet, 10, 4, 'Основной провод питания', 8, 'storage/material-images/AgACAgIAAxkBAAIIhmb4LvmyrFpCdy17bsBrbWu4RK2vAAIr4zEbRUuxSyUkgjspD0KiAQADAgADeQADNgQ.jpg', 'Обрыв в сети. Нужно заменить.', 'Провод 2*2,5 (Морозостойкий)', 'п.м', 10, 28560, 285600, 78400, 912800);
 
-        // Yakuniy summa yozish
-        $sheet->setCellValue('M11', 'Итого');
-        $sheet->setCellValue('N11', '7 257 824');
+        // Yakuniy summa
+        $sheet->mergeCells('A11:L11');
+        $sheet->setCellValue('A11', 'Итого');
+        $sheet->setCellValue('M11', '7 257 824');
+
+        // Uslublar qo'shish
+        $sheet->getStyle('A1:M11')->applyFromArray($defaultStyle);
 
         // Faylni saqlash
         $fileName = 'Coffee_Issimo_' . time() . '.xlsx';
@@ -962,9 +974,15 @@ class TelegramService
 
         // Faylni Telegram orqali jo'natish
         $this->sendToTelegram($filePath);
+
+        return response()->json(['message' => 'Excel file generated and sent via Telegram.']);
     }
 
     // Mahsulotni kiritish va rasmni joylash
+
+    /**
+     * @throws Exception
+     */
     private function insertProductRow($sheet, $row, $number, $name, $quantity, $imagePath, $description, $material, $unit, $unitQty, $price, $totalPrice, $workPayment, $finalTotal): void
     {
         $sheet->setCellValue('A' . $row, $number);
