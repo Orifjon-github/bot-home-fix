@@ -672,7 +672,7 @@ class TelegramService
     public function cancelMaterialButton(): void
     {
         $material_id = $this->userRepository->material($this->chat_id);
-        $material = (new Task)->find($material_id);
+        $material = (new Material())->find($material_id);
         $material->delete();
         $text = $this->textRepository->getOrCreate('success_cancel_material_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
