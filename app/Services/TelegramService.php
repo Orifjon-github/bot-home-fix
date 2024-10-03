@@ -163,12 +163,15 @@ class TelegramService
                             break;
                         default:
                             $task = Task::where('name', $this->text)->first();
-                            if (!$task) $this->showTasks();
-                            $this->userRepository->task($this->chat_id, $task->id);
-                            if ($this->userRepository->role($this->chat_id) == 'manager') {
-                                $this->technicalWork();
+                            if (!$task) {
+                                $this->showTasks();
                             } else {
-                                $this->showMaterials(); // show materials
+                                $this->userRepository->task($this->chat_id, $task->id);
+                                if ($this->userRepository->role($this->chat_id) == 'manager') {
+                                    $this->technicalWork();
+                                } else {
+                                    $this->showMaterials(); // show materials
+                                }
                             }
                             break;
                     }
@@ -184,9 +187,12 @@ class TelegramService
                             break;
                         default:
                             $material = Material::where('name', $this->text)->first();
-                            if (!$material) $this->showMaterials();
-                            $this->userRepository->material($this->chat_id, $material->id);
-                            $this->showMaterialInfo();
+                            if (!$material) {
+                                $this->showMaterials();
+                            } else {
+                                $this->userRepository->material($this->chat_id, $material->id);
+                                $this->showMaterialInfo();
+                            }
                             break;
                     }
                     break;
