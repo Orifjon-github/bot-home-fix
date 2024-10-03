@@ -144,7 +144,7 @@ class TelegramService
                             } else {
                                 $this->userRepository->branch($this->chat_id, $branch->id);
                                 if ($this->userRepository->role($this->chat_id) == 'manager') {
-                                    $this->generateExcel($branch->id);
+                                    $this->technicalWork();
                                 } else {
                                     $this->showTasks();
                                 }
@@ -675,6 +675,7 @@ class TelegramService
 
     public function confirmMaterialButton(): void
     {
+        $this->sendAllWarehouse();
         $text = $this->textRepository->getOrCreate('success_confirm_material_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showMaterials();
@@ -882,6 +883,20 @@ class TelegramService
         }
     }
 
+    private function sendAllWarehouse(): void
+    {
+        $users = User::where('role', 'warehouse')->where('status', 'active')->get();
+        $material = Material::find($this->userRepository->material($this->chat_id));
+        $task = (new Task())->find($material->task_id);
+        $branch = Branch::find($task->branch_id);
+        $object = (new Objects)->find($branch->objects_id);
+        foreach ($users as $user) {
+            $prefix = "<strong>Yangi Material Qo'shildi!!!</strong>";
+            $text = "$prefix\n\nObject name: $object->name\nFilial name: $branch->name\nFilial address: $branch->address\nTask name: $task->name\n\n------------------------------------\n\nMaterial: $material->name";
+            $this->telegram->sendMessage(['chat_id' => $user->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+        }
+    }
+
     private function saveImage($filePath, $file_name, $name='task'): void
     {
         $token = env('TELEGRAM_BOT_TOKEN');
@@ -899,138 +914,5 @@ class TelegramService
             $material->images()->create(['image' => $path]);
         }
 
-    }
-
-    /**
-     * @throws ModelNotFoundException
-     * @throws Exception
-     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
-     */
-
-
-    public function generateExcel()
-    {
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-
-        // Bosh uslublarni o'rnatish (o'rtaga joylash va chegaralar)
-        $defaultStyle = [
-            'alignment' => [
-                'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical' => Alignment::VERTICAL_CENTER,
-            ],
-            'borders' => [
-                'allBorders' => [
-                    'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['argb' => '000000'],
-                ],
-            ],
-        ];
-
-        // Kompaniya nomi va adres qismi
-        $sheet->mergeCells('A1:B1');
-        $sheet->setCellValue('A1', 'Название компании:');
-        $sheet->setCellValue('C1', 'Coffee Issimo');
-        $sheet->mergeCells('A2:B2');
-        $sheet->setCellValue('A2', 'Адрес:');
-        $sheet->setCellValue('C2', 'Talabalar');
-
-        // Цель осмотра qismi
-        $sheet->mergeCells('A3:C3');
-        $sheet->setCellValue('A3', 'Цель осмотра:');
-        $sheet->mergeCells('D3:G3');
-        $sheet->setCellValue('D3', 'Полный осмотр и диагностика электропроводки выдвижного зонта');
-
-        // Общие сведения об осмотре
-        $sheet->mergeCells('A4:G4');
-        $sheet->setCellValue('A4', 'Общие сведения об осмотре: Осмотрели проводку. Лед лампы');
-
-        // Jadval sarlavhalari
-        $sheet->fromArray([
-            ['№', 'Наименование', 'кол-во', 'Фото', 'Описание', 'время выполнения', 'расходный материал', 'ед-изм', 'кол-во', 'цена', 'сумма', 'Оплата за работу', 'Итого']
-        ], null, 'A6');
-
-        // Mahsulotlar ro'yxatini joylash
-        $this->insertProductRow($sheet, 7, 1, 'Led светильник', 16, 'storage/material-images/AgACAgIAAxkBAAIIhmb4LvmyrFpCdy17bsBrbWu4RK2vAAIr4zEbRUuxSyUkgjspD0KiAQADAgADeQADNgQ.jpg', 'Заменить. (Окисление в контактах. Пластмассовые детали утеряли прочность от перепада температуры)', 'Led 24v', 'п.м', 3.2, 47040, 150528, 78400, 1404928);
-        $this->insertProductRow($sheet, 8, 2, 'Led светильник', 12, 'storage/images/picture-2.jpg', 'Неисправность. Замена.', 'Led 24v', 'п.м', 2.4, 47040, 112896, 78400, 1053696);
-        $this->insertProductRow($sheet, 9, 3, 'Проводка между лампами', 35, 'storage/images/picture-3.jpg', 'Окисление. Обрыв. Замена.', 'Провод 2*2,5 (Морозостойкий)', 'п.м', 40, 28560, 1142400, 78400, 3886400);
-        $this->insertProductRow($sheet, 10, 4, 'Основной провод питания', 8, 'storage/material-images/AgACAgIAAxkBAAIIhmb4LvmyrFpCdy17bsBrbWu4RK2vAAIr4zEbRUuxSyUkgjspD0KiAQADAgADeQADNgQ.jpg', 'Обрыв в сети. Нужно заменить.', 'Провод 2*2,5 (Морозостойкий)', 'п.м', 10, 28560, 285600, 78400, 912800);
-
-        // Yakuniy summa
-        $sheet->mergeCells('A11:L11');
-        $sheet->setCellValue('A11', 'Итого');
-        $sheet->setCellValue('M11', '7 257 824');
-
-        // Uslublar qo'shish
-        $sheet->getStyle('A1:M11')->applyFromArray($defaultStyle);
-
-        // Faylni saqlash
-        $fileName = 'Coffee_Issimo_' . time() . '.xlsx';
-        $filePath = storage_path('app/public/reports/' . $fileName);
-
-        // Papka yo'q bo'lsa, yaratish
-        Storage::makeDirectory('public/reports');
-
-        $writer = new Xlsx($spreadsheet);
-        $writer->save($filePath);
-
-        // Faylni Telegram orqali jo'natish
-        $this->sendToTelegram($filePath);
-
-        return response()->json(['message' => 'Excel file generated and sent via Telegram.']);
-    }
-
-    // Mahsulotni kiritish va rasmni joylash
-
-    /**
-     * @throws Exception
-     */
-    private function insertProductRow($sheet, $row, $number, $name, $quantity, $imagePath, $description, $material, $unit, $unitQty, $price, $totalPrice, $workPayment, $finalTotal): void
-    {
-        $sheet->setCellValue('A' . $row, $number);
-        $sheet->setCellValue('B' . $row, $name);
-        $sheet->setCellValue('C' . $row, $quantity);
-
-        // Rasmni qo'shish
-        if (file_exists(public_path($imagePath))) {
-            $drawing = new Drawing();
-            $drawing->setName($name);
-            $drawing->setDescription($name);
-            $drawing->setPath(public_path($imagePath)); // Rasmning yo'li
-            $drawing->setHeight(80); // Rasmni balandligini sozlash
-            $drawing->setCoordinates('D' . $row); // Rasmni joylash
-            $drawing->setWorksheet($sheet);
-        } else {
-            // Rasm topilmasa, text sifatida yo'lni yozish
-            $sheet->setCellValue('D' . $row, 'Rasm topilmadi: ' . $imagePath);
-        }
-
-        // Qolgan ma'lumotlar
-        $sheet->setCellValue('E' . $row, $description);
-        $sheet->setCellValue('F' . $row, ''); // vaqt hozir kiritilmagan
-        $sheet->setCellValue('G' . $row, $material);
-        $sheet->setCellValue('H' . $row, $unit);
-        $sheet->setCellValue('I' . $row, $unitQty);
-        $sheet->setCellValue('J' . $row, $price);
-        $sheet->setCellValue('K' . $row, $totalPrice);
-        $sheet->setCellValue('L' . $row, $workPayment);
-        $sheet->setCellValue('M' . $row, $finalTotal);
-    }
-
-    // Telegramga fayl jo'natish
-    private function sendToTelegram($filePath): void
-    {
-        $chatId = $this->chat_id; // Telegram chat ID
-        $botToken = env('TELEGRAM_BOT_TOKEN'); // Bot token
-
-        $url = "https://api.telegram.org/bot$botToken/sendDocument";
-
-        // Faylni jo'natish
-        $response = Http::attach('document', fopen($filePath, 'r'), basename($filePath))
-            ->post($url, [
-                'chat_id' => $chatId,
-            ]);
-
-        $response->json();
     }
 }
