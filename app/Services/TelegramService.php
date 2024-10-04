@@ -780,7 +780,7 @@ class TelegramService
         $task = (new Task)->find($task_id);
         $materials = Material::where('task_id', $task_id)->get();
         $taskInfo = "Task name: $task->name\nTask description: $task->description\nTask quantity: $task->quantity\nTask price for work: $task->price_for_work";
-        $taskImages = $task->images();
+        $taskImages = $task->images()->get();
         $text = $this->textRepository->getOrCreate('all_materials_text', $this->userRepository->language($this->chat_id));
         foreach ($materials as $material) {
             $buttonText = $material->name;
