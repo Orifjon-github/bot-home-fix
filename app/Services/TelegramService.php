@@ -621,10 +621,11 @@ class TelegramService
                 $text = "";
             }
             $this->telegram->sendMediaGroup(['chat_id' => $this->chat_id, 'media' => json_encode($media), 'reply_markup' => $keyboard]);
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => '', 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
         } else {
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
         }
-         }
+    }
 
     public function confirmMaterial(): void
     {
