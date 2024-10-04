@@ -600,6 +600,7 @@ class TelegramService
     {
         $task_id = $this->userRepository->task($this->chat_id);
         $task = (new Task)->find($task_id);
+        $taskImages = $task->images()->get();
         $price = $task->price_for_work;
         $price_text = $price ?? "(The price for the service is fixed in advance)";
         $text = "Task name: $task->name\n\nTask Quantity: $task->quantity\n\nTask Description: $task->description\n\nTask Price For Service: $price_text";
@@ -609,8 +610,21 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::CONFIRM_TASK);
         $option = [[$this->telegram->buildKeyboardButton($textCancel), $this->telegram->buildKeyboardButton($textConfirm)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
-    }
+        if ($taskImages->count() > 0) {
+            $media = [];
+            foreach ($taskImages as $image) {
+                $media[] = [
+                    'type' => 'photo',
+                    'media' => env('APP_URL') . '/storage/' . $image->image,
+                    'caption' => $text,
+                ];
+                $text = "";
+            }
+            $this->telegram->sendMediaGroup(['chat_id' => $this->chat_id, 'media' => json_encode($media), 'reply_markup' => $keyboard]);
+        } else {
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+        }
+         }
 
     public function confirmMaterial(): void
     {
@@ -803,11 +817,9 @@ class TelegramService
         }
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
-        Log::error(json_encode($taskImages));
         if ($taskImages->count() > 0) {
             $media = [];
             foreach ($taskImages as $image) {
-                Log::error(json_encode($image));
                 $media[] = [
                     'type' => 'photo',
                     'media' => env('APP_URL') . '/storage/' . $image->image,
@@ -815,7 +827,6 @@ class TelegramService
                 ];
                 $taskInfo = "";
             }
-            Log::error(json_encode($media));
             $this->telegram->sendMediaGroup(['chat_id' => $this->chat_id, 'media' => json_encode($media)]);
         } else {
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $taskInfo, 'parse_mode' => 'html']);
