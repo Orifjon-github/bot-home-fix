@@ -779,6 +779,7 @@ class TelegramService
         $task = (new Task)->find($task_id);
         $materials = Material::where('task_id', $task_id)->get();
         $taskInfo = "Task name: $task->name\nTask description: $task->description\nTask quantity: $task->quantity\nTask price for work: $task->price_for_work";
+        $filePath = $task->images()->latest()->first()->image ?? null;
         $text = $this->textRepository->getOrCreate('all_materials_text', $this->userRepository->language($this->chat_id));
         foreach ($materials as $material) {
             $buttonText = $material->name;
@@ -801,7 +802,13 @@ class TelegramService
         }
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $taskInfo, 'parse_mode' => 'html']);
+        if ($filePath) {
+            $this->telegram->sendPhoto(['chat_id' => $this->chat_id, 'photo' => $filePath, 'caption' => $taskInfo, 'parse_mode' => 'html']);
+        } else {
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $taskInfo, 'parse_mode' => 'html']);
+
+        }
+
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
