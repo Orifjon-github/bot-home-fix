@@ -17,6 +17,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Exception;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -802,9 +803,11 @@ class TelegramService
         }
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        Log::error(json_encode($taskImages));
         if ($taskImages->count() > 0) {
             $media = [];
             foreach ($taskImages as $image) {
+                Log::error(json_encode($image));
                 $media[] = [
                     'type' => 'photo',
                     'media' => env('APP_URL') . '/storage/' . $image->image,
@@ -812,6 +815,7 @@ class TelegramService
                 ];
                 $taskInfo = null;
             }
+            Log::error(json_encode($media));
             $this->telegram->sendMediaGroup(['chat_id' => $this->chat_id, 'media' => json_encode($media)]);
         } else {
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $taskInfo, 'parse_mode' => 'html']);
