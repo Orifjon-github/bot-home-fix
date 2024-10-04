@@ -802,7 +802,7 @@ class TelegramService
         }
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
-        if (count($taskImages) > 0) {
+        if ($taskImages->count() > 0) {
             $media = [];
             foreach ($taskImages as $image) {
                 $media[] = [
