@@ -779,7 +779,7 @@ class TelegramService
         $task = (new Task)->find($task_id);
         $materials = Material::where('task_id', $task_id)->get();
         $taskInfo = "Task name: $task->name\nTask description: $task->description\nTask quantity: $task->quantity\nTask price for work: $task->price_for_work";
-        $filePath = $task->images()->latest()->first()->image ?? null;
+        $taskImages = $task->images();
         $text = $this->textRepository->getOrCreate('all_materials_text', $this->userRepository->language($this->chat_id));
         foreach ($materials as $material) {
             $buttonText = $material->name;
@@ -802,9 +802,17 @@ class TelegramService
         }
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
-        if ($filePath) {
-            $filePath = env('APP_URL') . '/storage/' . $filePath;
-            $this->telegram->sendPhoto(['chat_id' => $this->chat_id, 'photo' => $filePath, 'caption' => $taskInfo, 'parse_mode' => 'html']);
+        if (count($taskImages) > 0) {
+            $media = [];
+            foreach ($taskImages as $image) {
+                $media[] = [
+                    'type' => 'photo',
+                    'media' => env('APP_URL') . '/storage/' . $image->image,
+                    'caption' => $taskInfo,
+                ];
+                $taskInfo = null;
+            }
+            $this->telegram->sendMediaGroup(['chat_id' => $this->chat_id, 'media' => $media]);
         } else {
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $taskInfo, 'parse_mode' => 'html']);
         }
