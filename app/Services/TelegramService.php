@@ -813,7 +813,7 @@ class TelegramService
                     'media' => env('APP_URL') . '/storage/' . $image->image,
                     'caption' => $taskInfo,
                 ];
-                $taskInfo = null;
+                $taskInfo = "";
             }
             Log::error(json_encode($media));
             $this->telegram->sendMediaGroup(['chat_id' => $this->chat_id, 'media' => json_encode($media)]);
