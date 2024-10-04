@@ -776,8 +776,9 @@ class TelegramService
     public function showMaterials(): void
     {
         $task_id = $this->userRepository->task($this->chat_id);
+        $task = (new Task)->find($task_id);
         $materials = Material::where('task_id', $task_id)->get();
-
+        $taskInfo = "Task name: $task->name\nTask description: $task->description\nTask quantity: $task->quantity\nTask price for work: $task->price_for_work";
         $text = $this->textRepository->getOrCreate('all_materials_text', $this->userRepository->language($this->chat_id));
         foreach ($materials as $material) {
             $buttonText = $material->name;
@@ -800,6 +801,7 @@ class TelegramService
         }
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $taskInfo, 'parse_mode' => 'html']);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
