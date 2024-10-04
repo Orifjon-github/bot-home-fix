@@ -632,6 +632,7 @@ class TelegramService
     {
         $material_id = $this->userRepository->material($this->chat_id);
         $material = Material::find($material_id);
+        $materialImages = $material->images()->get();
         $task = (new Task)->find($material->task_id);
         $text = "Task name: $task->name\n\nMaterial: $material->name\nMaterial Quantity: $material->quantity $material->quantity_type";
         $textConfirm = $this->textRepository->getOrCreate('confirm_material_button', $this->userRepository->language($this->chat_id));
@@ -640,7 +641,22 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::CONFIRM_MATERIAL);
         $option = [[$this->telegram->buildKeyboardButton($textCancel), $this->telegram->buildKeyboardButton($textConfirm)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+        if ($materialImages->count() > 0) {
+            $media = [];
+            foreach ($materialImages as $image) {
+                $media[] = [
+                    'type' => 'photo',
+                    'media' => env('APP_URL') . '/storage/' . $image->image,
+                    'caption' => $text,
+                ];
+                $text = "";
+            }
+            $this->telegram->sendMediaGroup(['chat_id' => $this->chat_id, 'media' => json_encode($media), 'reply_markup' => $keyboard]);
+            $textChoose = $this->textRepository->getOrCreate('choose_one', $this->userRepository->language($this->chat_id));
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $textChoose, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+        } else {
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+        }
     }
 
     public function cancelObjectButton(): void
