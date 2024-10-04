@@ -870,16 +870,35 @@ class TelegramService
         $task = $material->task;
         $price = $material->price_for_type ?? '(Narx kiritilmagan)';
         $text = "Muammo: $task->name\nMuammo haqida: $task->description\n\nZapchast: $material->name\nO'lchovi: $material->quantity_type\nMiqdori: $material->quantity\n$material->quantity_type uchun narx: $price";
-        if ($this->userRepository->role($this->chat_id) == 'warehouse' && empty($material->price_for_type)) {
-            $textAddPrice = $this->textRepository->getOrCreate('add_material_price_button', $this->userRepository->language($this->chat_id));
-            $textBackButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
-            $option = [[$this->telegram->buildKeyboardButton($textBackButton), $this->telegram->buildKeyboardButton($textAddPrice)]];
-            $this->userRepository->page($this->chat_id, TelegramHelper::ADD_MATERIAL_PRICE);
-            $keyboard = $this->telegram->buildKeyBoard($option, false, true);
-            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+        $textAddPrice = $this->textRepository->getOrCreate('add_material_price_button', $this->userRepository->language($this->chat_id));
+        $textBackButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
+        $option = [[$this->telegram->buildKeyboardButton($textBackButton), $this->telegram->buildKeyboardButton($textAddPrice)]];
+        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        if ($materialImages->count() > 0) {
+            $media = [];
+            foreach ($materialImages as $image) {
+                $media[] = [
+                    'type' => 'photo',
+                    'media' => env('APP_URL') . '/storage/' . $image->image,
+                    'caption' => $text,
+                ];
+                $text = "";
+            }
+            $this->telegram->sendMediaGroup(['chat_id' => $this->chat_id, 'media' => json_encode($media)]);
+            if ($this->userRepository->role($this->chat_id) == 'warehouse' && empty($material->price_for_type)) {
+                $this->userRepository->page($this->chat_id, TelegramHelper::ADD_MATERIAL_PRICE);
+                $textChoose = $this->textRepository->getOrCreate('choose_one', $this->userRepository->language($this->chat_id));
+                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $textChoose, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+            }
         } else {
-            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+            if ($this->userRepository->role($this->chat_id) == 'warehouse' && empty($material->price_for_type)) {
+                $this->userRepository->page($this->chat_id, TelegramHelper::ADD_MATERIAL_PRICE);
+                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+            } else {
+                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
+            }
         }
+
     }
 
     public function successChangeLang(): void
