@@ -868,6 +868,7 @@ class TelegramService
     {
         $material = Material::find($this->userRepository->material($this->chat_id));
         $task = $material->task;
+        $materialImages = $material->images()->get();
         $price = $material->price_for_type ?? '(Narx kiritilmagan)';
         $text = "Muammo: $task->name\nMuammo haqida: $task->description\n\nZapchast: $material->name\nO'lchovi: $material->quantity_type\nMiqdori: $material->quantity\n$material->quantity_type uchun narx: $price";
         $textAddPrice = $this->textRepository->getOrCreate('add_material_price_button', $this->userRepository->language($this->chat_id));
