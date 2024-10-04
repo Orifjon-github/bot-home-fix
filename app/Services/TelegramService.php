@@ -621,7 +621,8 @@ class TelegramService
                 $text = "";
             }
             $this->telegram->sendMediaGroup(['chat_id' => $this->chat_id, 'media' => json_encode($media), 'reply_markup' => $keyboard]);
-            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => '', 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+            $textChoose = $this->textRepository->getOrCreate('choose_one', $this->userRepository->language($this->chat_id));
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $textChoose, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
         } else {
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
         }
