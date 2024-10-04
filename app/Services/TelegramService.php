@@ -812,7 +812,7 @@ class TelegramService
                 ];
                 $taskInfo = null;
             }
-            $this->telegram->sendMediaGroup(['chat_id' => $this->chat_id, 'media' => $media]);
+            $this->telegram->sendMediaGroup(['chat_id' => $this->chat_id, 'media' => json_encode($media)]);
         } else {
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $taskInfo, 'parse_mode' => 'html']);
         }
