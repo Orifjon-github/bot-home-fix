@@ -803,10 +803,10 @@ class TelegramService
         $option[] = [$this->telegram->buildKeyboardButton($textButtonMain)];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         if ($filePath) {
+            $filePath = env('APP_URL') . '/storage/' . $filePath;
             $this->telegram->sendPhoto(['chat_id' => $this->chat_id, 'photo' => $filePath, 'caption' => $taskInfo, 'parse_mode' => 'html']);
         } else {
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $taskInfo, 'parse_mode' => 'html']);
-
         }
 
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
