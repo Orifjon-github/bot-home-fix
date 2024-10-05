@@ -571,13 +571,10 @@ class TelegramService
 
     public function confirmObject(): void
     {
-        $object = (new Objects)->find($this->userRepository->object($this->chat_id));
-        $branch_id = $this->userRepository->branch($this->chat_id);
-        $branch = Branch::find($branch_id);
-        $text = "Object name: $object->name\n\nFilial name: $branch->name\nFilial address: $branch->address\n\nKiritgan malumotlaringiz Barcha xodimlarga yuboriladi!! Obyekt va Filialni tasdiqlaysizmi?";
+        $branch = Branch::find($this->userRepository->branch($this->chat_id));
+        $text = $this->sendPushMessage($branch);
         $textConfirm = $this->textRepository->getOrCreate('confirm_object_button', $this->userRepository->language($this->chat_id));
         $textCancel = $this->textRepository->getOrCreate('cancel_object_button', $this->userRepository->language($this->chat_id));
-        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
         $this->userRepository->page($this->chat_id, TelegramHelper::CONFIRM_OBJECT);
         $option = [[$this->telegram->buildKeyboardButton($textCancel), $this->telegram->buildKeyboardButton($textConfirm)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
@@ -644,9 +641,8 @@ class TelegramService
 
     public function cancelObjectButton(): void
     {
-        $object_id = $this->userRepository->object($this->chat_id);
-        $object = (new Objects)->find($object_id);
-        $object->delete();
+        $branch = (new Branch())->find($this->userRepository->branch($this->chat_id));
+        $branch->delete();
         $text = $this->textRepository->getOrCreate('success_cancel_object_text', $this->userRepository->language($this->chat_id));
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         $this->showObjects();
