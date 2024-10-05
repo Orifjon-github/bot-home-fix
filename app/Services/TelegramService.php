@@ -976,10 +976,11 @@ class TelegramService
         }
         $objectNameText = $this->textRepository->getOrCreate('object_name_text', $this->userRepository->language($this->chat_id));
         $filialNameText = $this->textRepository->getOrCreate('filial_name_text', $this->userRepository->language($this->chat_id));
+        $filialAddressText = $this->textRepository->getOrCreate('filial_address_text', $this->userRepository->language($this->chat_id));
         $taskNameText = $this->textRepository->getOrCreate('task_name_text', $this->userRepository->language($this->chat_id));
         $materialNameText = $this->textRepository->getOrCreate('material_name_text', $this->userRepository->language($this->chat_id));
         $prefixText = $is_material ? $this->textRepository->getOrCreate('send_warehouse_prefix_text', $this->userRepository->language($this->chat_id)) : $this->textRepository->getOrCreate('send_employee_prefix_text', $this->chat_id);
-        $message = "<strong>$prefixText</strong>\n\n$objectNameText: $object->name\n$filialNameText: $branch->name";
+        $message = "<strong>$prefixText</strong>\n\n$objectNameText: $object->name\n$filialNameText: $branch->name\n$filialAddressText: $branch->address";
         return $is_material ? $message . "\n$taskNameText: $task->name\n\n-----------------------\n\n$materialNameText: $model->name" : $message;
     }
 }
