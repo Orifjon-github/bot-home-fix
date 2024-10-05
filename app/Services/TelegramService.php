@@ -13,19 +13,7 @@ use App\Models\User;
 use App\Repositories\ObjectRepository;
 use App\Repositories\TelegramTextRepository;
 use App\Repositories\UserRepository;
-use Carbon\Carbon;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use PhpOffice\PhpSpreadsheet\Exception;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use function PHPUnit\Framework\isFalse;
 
 class TelegramService
 {
@@ -601,12 +589,9 @@ class TelegramService
         $task_id = $this->userRepository->task($this->chat_id);
         $task = (new Task)->find($task_id);
         $taskImages = $task->images()->get();
-        $price = $task->price_for_work;
-        $price_text = $price ?? "(The price for the service is fixed in advance)";
-        $text = "Task name: $task->name\n\nTask Quantity: $task->quantity\n\nTask Description: $task->description\n\nTask Price For Service: $price_text";
+        $text = $this->materialInfo($task);
         $textConfirm = $this->textRepository->getOrCreate('confirm_task_button', $this->userRepository->language($this->chat_id));
         $textCancel = $this->textRepository->getOrCreate('cancel_task_button', $this->userRepository->language($this->chat_id));
-        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
         $this->userRepository->page($this->chat_id, TelegramHelper::CONFIRM_TASK);
         $option = [[$this->telegram->buildKeyboardButton($textCancel), $this->telegram->buildKeyboardButton($textConfirm)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
@@ -633,11 +618,9 @@ class TelegramService
         $material_id = $this->userRepository->material($this->chat_id);
         $material = Material::find($material_id);
         $materialImages = $material->images()->get();
-        $task = (new Task)->find($material->task_id);
-        $text = "Task name: $task->name\n\nMaterial: $material->name\nMaterial Quantity: $material->quantity $material->quantity_type";
+        $text = $this->materialInfo($material, true);
         $textConfirm = $this->textRepository->getOrCreate('confirm_material_button', $this->userRepository->language($this->chat_id));
         $textCancel = $this->textRepository->getOrCreate('cancel_material_button', $this->userRepository->language($this->chat_id));
-        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
         $this->userRepository->page($this->chat_id, TelegramHelper::CONFIRM_MATERIAL);
         $option = [[$this->telegram->buildKeyboardButton($textCancel), $this->telegram->buildKeyboardButton($textConfirm)]];
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
@@ -811,7 +794,7 @@ class TelegramService
         $task_id = $this->userRepository->task($this->chat_id);
         $task = (new Task)->find($task_id);
         $materials = Material::where('task_id', $task_id)->get();
-        $taskInfo = "Task name: $task->name\nTask description: $task->description\nTask quantity: $task->quantity\nTask price for work: $task->price_for_work";
+        $taskInfo = $this->materialInfo($task);
         $taskImages = $task->images()->get();
         $text = $this->textRepository->getOrCreate('all_materials_text', $this->userRepository->language($this->chat_id));
         foreach ($materials as $material) {
@@ -867,10 +850,8 @@ class TelegramService
     public function showMaterialInfo(): void
     {
         $material = Material::find($this->userRepository->material($this->chat_id));
-        $task = $material->task;
         $materialImages = $material->images()->get();
-        $price = $material->price_for_type ?? '(Narx kiritilmagan)';
-        $text = "Muammo: $task->name\nMuammo haqida: $task->description\n\nZapchast: $material->name\nO'lchovi: $material->quantity_type\nMiqdori: $material->quantity\n$material->quantity_type uchun narx: $price";
+        $text = $this->materialInfo($material, true);
         $textAddPrice = $this->textRepository->getOrCreate('add_material_price_button', $this->userRepository->language($this->chat_id));
         $textBackButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
         $option = [[$this->telegram->buildKeyboardButton($textBackButton), $this->telegram->buildKeyboardButton($textAddPrice)]];
@@ -923,20 +904,6 @@ class TelegramService
         $this->showMainPage();
     }
 
-    private function back($step, $function): void
-    {
-        $this->userRepository->page($this->chat_id, $step);
-        $this->$function();
-    }
-
-    private function backButton(): bool|string
-    {
-        $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
-        $textButtonMain = $this->textRepository->getOrCreate('main_page_button', $this->userRepository->language($this->chat_id));
-        $option = [[$this->telegram->buildKeyboardButton($backButton), $this->telegram->buildKeyboardButton($textButtonMain)]];
-        return $this->telegram->buildKeyBoard($option, false, true);
-    }
-
     public function handleRegistration(): void
     {
         $user = $this->userRepository->checkOrCreate($this->chat_id);
@@ -951,10 +918,8 @@ class TelegramService
     {
         $users = User::where('role', 'employee')->where('status', 'active')->get();
         $branch = Branch::find($branch_id);
-        $object = (new Objects)->find($branch->objects_id);
         foreach ($users as $user) {
-            $prefix = "<strong>Yangi Filial Qo'shildi!!!</strong>";
-            $text = "$prefix\n\nObject name: $object->name\n\nFilial name: $branch->name\nFilial address: $branch->address";
+            $text = $this->sendPushMessage($branch);
             $this->telegram->sendMessage(['chat_id' => $user->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         }
     }
@@ -963,12 +928,8 @@ class TelegramService
     {
         $users = User::where('role', 'warehouse')->where('status', 'active')->get();
         $material = Material::find($this->userRepository->material($this->chat_id));
-        $task = (new Task())->find($material->task_id);
-        $branch = Branch::find($task->branch_id);
-        $object = (new Objects)->find($branch->objects_id);
         foreach ($users as $user) {
-            $prefix = "<strong>Yangi Material Qo'shildi!!!</strong>";
-            $text = "$prefix\n\nObject name: $object->name\nFilial name: $branch->name\nFilial address: $branch->address\nTask name: $task->name\n\n------------------------------------\n\nMaterial: $material->name";
+            $text = $this->sendPushMessage($material, true);
             $this->telegram->sendMessage(['chat_id' => $user->chat_id, 'text' => $text, 'parse_mode' => 'html']);
         }
     }
@@ -990,5 +951,39 @@ class TelegramService
             $material->images()->create(['image' => $path]);
         }
 
+    }
+
+    public function materialInfo($model, $is_material=false): string
+    {
+        $taskNameText = $this->textRepository->getOrCreate('task_name_text', $this->userRepository->language($this->chat_id));
+        $taskDescriptionText = $this->textRepository->getOrCreate('task_description_text', $this->userRepository->language($this->chat_id));
+        $taskQuantityText = $this->textRepository->getOrCreate('task_quantity_text', $this->userRepository->language($this->chat_id));
+        $taskPriceForWork = $this->textRepository->getOrCreate('task_price_for_work_text', $this->userRepository->language($this->chat_id));
+        $materialName = $this->textRepository->getOrCreate('material_name_text', $this->userRepository->language($this->chat_id));
+        $materialQuantityType = $this->textRepository->getOrCreate('material_quantity_type_text', $this->userRepository->language($this->chat_id));
+        $materialQuantity = $this->textRepository->getOrCreate('material_quantity_text', $this->userRepository->language($this->chat_id));
+        $materialPriceForType = $this->textRepository->getOrCreate('material_price_for_type_text', $this->userRepository->language($this->chat_id));
+        $task = $is_material ? $model->task : $model;
+        $message = "$taskNameText: $task->name\n$taskDescriptionText: $task->description\n$taskQuantityText: $task->quantity\n$taskPriceForWork: $task->price_for_work";
+        return $is_material ? $message . "\n\n$materialName: $model->name\n$materialQuantityType: $model->quantity_type\n$materialQuantity: $model->quantity\n$materialPriceForType: $model->price_for_type" : $message;
+    }
+
+    public function sendPushMessage($model, $is_material=false): string
+    {
+        if ($is_material) {
+            $task = $model->task;
+            $branch = $task->branch;
+            $object = $branch->object;
+        } else {
+            $branch = $model;
+            $object = $model->object;
+        }
+        $objectNameText = $this->textRepository->getOrCreate('object_name_text', $this->userRepository->language($this->chat_id));
+        $filialNameText = $this->textRepository->getOrCreate('filial_name_text', $this->userRepository->language($this->chat_id));
+        $taskNameText = $this->textRepository->getOrCreate('task_name_text', $this->userRepository->language($this->chat_id));
+        $materialNameText = $this->textRepository->getOrCreate('material_name_text', $this->userRepository->language($this->chat_id));
+        $prefixText = $is_material ? $this->textRepository->getOrCreate('send_warehouse_prefix_text', $this->userRepository->language($this->chat_id)) : $this->textRepository->getOrCreate('send_employee_prefix_text', $this->chat_id);
+        $message = "<strong>$prefixText</strong>\n\n$objectNameText: $object->name\n$filialNameText: $branch->name";
+        return $is_material ? $message . "\n$taskNameText: $task->name\n\n-----------------------\n\n$materialNameText: $model->name" : $message;
     }
 }
