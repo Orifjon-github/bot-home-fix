@@ -6,9 +6,6 @@ use App\Helpers\Response;
 use App\Services\LogService;
 use App\Services\Telegram;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use Illuminate\Http\JsonResponse;
-use Throwable;
-
 
 class Handler extends ExceptionHandler
 {
@@ -19,7 +16,7 @@ class Handler extends ExceptionHandler
         'password_confirmation',
     ];
 
-    public function render($request, Throwable $e)
+    public function render($request, \Throwable $e)
     {
         $errorMessage = sprintf(
             "Error: %s\nFile: %s\nLine: %d",
