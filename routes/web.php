@@ -14,3 +14,4 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/{id}', [App\Http\Controllers\ExelController::class, 'index']);
+Route::get('/new/{id}', [App\Http\Controllers\ExelexportController::class, 'index']);
