@@ -112,9 +112,12 @@ class TelegramService
                         $this->showMainPage();
                     } else {
                         $object = Objects::where('name', $this->text)->first();
-                        if (!$object) $this->showObjects();
-                        $this->userRepository->object($this->chat_id, $object->id);
-                        $this->showBranches();
+                        if (!$object) {
+                            $this->showObjects();
+                        } else {
+                            $this->userRepository->object($this->chat_id, $object->id);
+                            $this->showBranches();
+                        }
                     }
                     break;
                 case TelegramHelper::ALL_BRANCHES:
@@ -727,6 +730,7 @@ class TelegramService
         $object_id = $this->userRepository->object($this->chat_id);
         $branches = Branch::where('objects_id', $object_id)->get();
         $text = $this->textRepository->getOrCreate('all_branches_text', $this->userRepository->language($this->chat_id));
+        $option = [];
         foreach ($branches as $branch) {
             $buttonText = $branch->name;
             $temp[] = $this->telegram->buildKeyboardButton($buttonText);
