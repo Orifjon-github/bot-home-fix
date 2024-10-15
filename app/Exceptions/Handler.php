@@ -30,6 +30,6 @@ class Handler extends ExceptionHandler
         $notify->sendMessage(['chat_id' => '298410462', 'text' => $errorMessage]);
 
         // Return a generic success message (adjust if needed)
-        return $this->success(['message' => ':)']);
+        return $this->success(['message' => ''.$e]);
     }
 }
