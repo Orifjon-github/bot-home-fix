@@ -78,4 +78,8 @@ class UserRepository
     {
         $this->model->where('chat_id', $chat_id)->update(['status' => 'delete-account']);
     }
+
+    public function name($chat_id, $name=null) {
+        return $name ? $this->model->updateOrCreate(['chat_id' => $chat_id], ['chat_id' => $chat_id, 'name' => $name]) : $this->model::where('chat_id', $chat_id)->first()->name;
+    }
 }

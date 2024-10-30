@@ -67,10 +67,14 @@ class TelegramService
                 case TelegramHelper::PHONE_STEP:
                     if ($phone = TelegramHelper::checkPhone($this->text)) {
                         $this->userRepository->phone($this->chat_id, $phone);
-                        $this->showMainPage();
+                        $this->askName();
                     } else {
                         $this->askCorrectPhone();
                     }
+                    break;
+                case TelegramHelper::NAME_STEP:
+                    $this->userRepository->name($this->chat_id, $this->text);
+                    $this->showMainPage();
                     break;
                 case TelegramHelper::SETTINGS_STEP:
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
@@ -226,7 +230,7 @@ class TelegramService
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
                     if ($keyword == 'ready_task_button') {
                         $this->confirmTask();
-                    } else{
+                    } else {
                         $photoArray = $this->telegram->getUpdateType();
                         if ($photoArray && is_array($photoArray)) {
                             $photo = end($photoArray);
@@ -257,7 +261,7 @@ class TelegramService
                     $keyword = $this->textRepository->getKeyword($this->text, $this->userRepository->language($this->chat_id));
                     if ($keyword == 'ready_material_button' || $keyword == 'next_button') {
                         $this->confirmMaterial();
-                    } else{
+                    } else {
                         $photoArray = $this->telegram->getUpdateType();
                         if ($photoArray && is_array($photoArray)) {
                             $photo = end($photoArray);
@@ -376,7 +380,7 @@ class TelegramService
         $textButton = $this->textRepository->getOrCreate('ask_phone_button', $this->userRepository->language($this->chat_id));
         $this->userRepository->page($this->chat_id, TelegramHelper::PHONE_STEP);
         $option = [[$this->telegram->buildKeyboardButton($textButton, true)]];
-        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        $keyboard = $this->telegram->buildKeyBoard($option, true, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
@@ -385,8 +389,15 @@ class TelegramService
         $text = $this->textRepository->getOrCreate('ask_correct_phone_text', $this->userRepository->language($this->chat_id));
         $textButton = $this->textRepository->getOrCreate('ask_phone_button', $this->userRepository->language($this->chat_id));
         $option = [[$this->telegram->buildKeyboardButton($textButton, true)]];
-        $keyboard = $this->telegram->buildKeyBoard($option, false, true);
+        $keyboard = $this->telegram->buildKeyBoard($option, true, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+    }
+
+    private function askName(): void
+    {
+        $text = $this->textRepository->getOrCreate('ask_name', $this->userRepository->language($this->chat_id));
+        $this->userRepository->page($this->chat_id, TelegramHelper::NAME_STEP);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
 
     public function showMainPage(): void
@@ -458,6 +469,7 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_DESCRIPTION);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
+
     public function askTaskPriceForWork(): void
     {
         $text = $this->textRepository->getOrCreate('ask_task_price_for_work_text', $this->userRepository->language($this->chat_id));
@@ -469,7 +481,7 @@ class TelegramService
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
-    public function askTaskImage($button=false): void
+    public function askTaskImage($button = false): void
     {
         $backButton = $this->textRepository->getOrCreate('back_button', $this->userRepository->language($this->chat_id));
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_TASK_IMAGE);
@@ -478,7 +490,7 @@ class TelegramService
             $readyTask = $this->textRepository->getOrCreate('ready_task_button', $this->userRepository->language($this->chat_id));
             $option = [[$this->telegram->buildKeyboardButton($readyTask)]];
             $keyboard = $this->telegram->buildKeyBoard($option, false, true);
-            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text,'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
         } else {
             $text = $this->textRepository->getOrCreate('ask_task_image_text', $this->userRepository->language($this->chat_id));
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
@@ -520,7 +532,7 @@ class TelegramService
         }
         $keyboard = $this->telegram->buildKeyBoard($option, true, true);
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_QUANTITY_TYPE);
-        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard ,'parse_mode' => 'html']);
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
 
     public function askMaterialQuantity(): void
@@ -530,7 +542,8 @@ class TelegramService
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_QUANTITY);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'parse_mode' => 'html']);
     }
-    public function askMaterialImage($button=false): void
+
+    public function askMaterialImage($button = false): void
     {
         $this->userRepository->page($this->chat_id, TelegramHelper::ASK_MATERIAL_IMAGE);
         if ($button) {
@@ -538,13 +551,13 @@ class TelegramService
             $readyTask = $this->textRepository->getOrCreate('ready_material_button', $this->userRepository->language($this->chat_id));
             $option = [[$this->telegram->buildKeyboardButton($readyTask)]];
             $keyboard = $this->telegram->buildKeyBoard($option, false, true);
-            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text,'reply_markup' => $keyboard, 'parse_mode' => 'html']);
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
         } else {
             $text = $this->textRepository->getOrCreate('ask_material_image_text', $this->userRepository->language($this->chat_id));
             $next_button = $this->textRepository->getOrCreate('next_button', $this->userRepository->language($this->chat_id));
             $option = [[$this->telegram->buildKeyboardButton($next_button)]];
             $keyboard = $this->telegram->buildKeyBoard($option, false, true);
-            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'reply_markup' => $keyboard,'text' => $text, 'parse_mode' => 'html']);
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'reply_markup' => $keyboard, 'text' => $text, 'parse_mode' => 'html']);
         }
     }
 
@@ -847,6 +860,7 @@ class TelegramService
         $keyboard = $this->telegram->buildKeyBoard($option, false, true);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $text, 'reply_markup' => $keyboard, 'parse_mode' => 'html']);
     }
+
     public function showMaterialInfo(): void
     {
         $material = Material::find($this->userRepository->material($this->chat_id));
@@ -934,7 +948,7 @@ class TelegramService
         }
     }
 
-    private function saveImage($filePath, $file_name, $name='task'): void
+    private function saveImage($filePath, $file_name, $name = 'task'): void
     {
         $token = env('TELEGRAM_BOT_TOKEN');
         $url = "https://api.telegram.org/file/bot{$token}/{$filePath}";
@@ -953,7 +967,7 @@ class TelegramService
 
     }
 
-    public function materialInfo($model, $is_material=false): string
+    public function materialInfo($model, $is_material = false): string
     {
         $taskNameText = $this->textRepository->getOrCreate('task_name_text', $this->userRepository->language($this->chat_id));
         $taskDescriptionText = $this->textRepository->getOrCreate('task_description_text', $this->userRepository->language($this->chat_id));
@@ -968,7 +982,7 @@ class TelegramService
         return $is_material ? $message . "\n\n$materialName: $model->name\n$materialQuantityType: $model->quantity_type\n$materialQuantity: $model->quantity\n$materialPriceForType: $model->price_for_type" : $message;
     }
 
-    public function sendPushMessage($model, $is_material=false): string
+    public function sendPushMessage($model, $is_material = false): string
     {
         if ($is_material) {
             $task = $model->task;

@@ -11,6 +11,7 @@ class TelegramHelper
           ENGLISH_LANGUAGE = 'Ўзбекча (кирилл)',
           START_STEP = 'start',
           PHONE_STEP = 'askPhone',
+          NAME_STEP = 'askName',
           MAIN_PAGE_STEP = 'main',
           ALL_OBJECTS = 'all_objects',
           ALL_BRANCHES = 'all_branches',
